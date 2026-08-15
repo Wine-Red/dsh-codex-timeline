@@ -24,4 +24,21 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
-      - run: npm publish --access public --provenance
+      - name: Verify release tag
+        shell: bash
+        run: |
+          expected="v$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
+          test "$GITHUB_REF_NAME" = "$expected"
+      - name: Check registry
+        id: registry
+        shell: bash
+        run: |
+          package="$(node -p "const p=JSON.parse(require('fs').readFileSync('package.json', 'utf8')); p.name + '@' + p.version")"
+          if npm view "$package" version --json >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish package
+        if: steps.registry.outputs.published != 'true'
+        run: npm publish --access public --provenance
