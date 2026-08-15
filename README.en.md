@@ -8,7 +8,7 @@ English | [中文](README.md)
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
-[![license](https://img.shields.io/npm/l/dsh-codex-timeline.svg)](LICENSE)
+[![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
 A subtle user-Turn navigation rail attached to the left edge of the active DeepSeek Harness Web Chat transcript. It highlights the Turn at the reading position, jumps to any loaded prompt, and searches loaded prompts and model answers locally.
 

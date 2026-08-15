@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
-[![license](https://img.shields.io/npm/l/dsh-codex-timeline.svg)](LICENSE)
+[![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
 为 DeepSeek Harness Web 长会话提供一个贴在 Chat 正文左侧、低干扰的用户 Turn 导航轨道。它只标记用户发起的轮次，能随正文滚动高亮、快速跳转，并在本地搜索已经加载的提问与模型回答。
 
