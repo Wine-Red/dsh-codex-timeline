@@ -27,7 +27,7 @@ jobs:
       - run: pnpm run test
       - run: pnpm run build
       - run: pnpm pack --pack-destination artifacts
-      - run: npm publish --dry-run --ignore-scripts
+      - run: npm pack --dry-run --json --ignore-scripts
       - uses: actions/upload-artifact@v7
         with:
           name: npm-package
