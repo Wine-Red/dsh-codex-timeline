@@ -1,0 +1,6 @@
+dsh-codex-timeline
+
+The rc.6 compatibility adapter contains portions derived from DeepSeek Harness,
+copyright DeepSeek, licensed under the MIT License. The turn-navigation changes
+and packaging are copyright 2026 dsh-codex-timeline contributors and are also
+licensed under the MIT License. See LICENSE.

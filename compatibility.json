@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "dsh": {
+    "version": "0.1.0-rc.6",
+    "commit": "47f943859bef60e4160492346772ded9b24f765a"
+  },
+  "upstream": {
+    "package": "@deepseek-ai/dsh-client-ui-conversation",
+    "version": "0.1.0-rc.6",
+    "npmShasum": "e57a4076dfe4c05dbe21f06cbd1b25ed9ac17d54"
+  },
+  "adapter": {
+    "mode": "bundle-disable-and-insert",
+    "disabledRow": "ui-conversation",
+    "insertedRow": "codex-timeline",
+    "clientModuleId": "dsh-codex-timeline",
+    "publicSlot": "conversation.chat.navigation",
+    "artifactSha256": "6c30ce4dba2490a732c11fb410da0a857da2883d815b1519c65177297066792c"
+  }
+}

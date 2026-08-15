@@ -1,0 +1,5 @@
+lib/client.js
+lib/client.js.map
+artifacts/
+node_modules/
+*.tgz
