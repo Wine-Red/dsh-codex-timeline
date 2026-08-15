@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">Turn preview and local search test illustration</title>
+  <desc id="desc">Fixed demo copy illustrates the hover preview and local search results without real conversation content.</desc>
+  <rect width="1200" height="600" rx="32" fill="#151618"/>
+  <g fill="#6f7379">
+    <rect x="34" y="106" width="14" height="6" rx="3"/>
+    <rect x="34" y="136" width="14" height="6" rx="3"/>
+    <rect x="34" y="166" width="24" height="6" rx="3"/>
+    <rect x="34" y="196" width="38" height="6" rx="3"/>
+    <rect x="34" y="226" width="58" height="6" rx="3" fill="#f0f1f2"/>
+    <rect x="34" y="256" width="38" height="6" rx="3"/>
+    <rect x="34" y="286" width="24" height="6" rx="3"/>
+    <rect x="34" y="316" width="14" height="6" rx="3"/>
+  </g>
+
+  <rect x="112" y="72" width="500" height="290" rx="22" fill="#292a2d"/>
+  <text x="140" y="120" fill="#f2f3f4" font-family="Segoe UI, sans-serif" font-size="24" font-weight="700">Item 4 / 8</text>
+  <text x="280" y="120" fill="#b8bbc0" font-family="Segoe UI, sans-serif" font-size="20">10:24</text>
+  <text x="360" y="120" fill="#32c77b" font-family="Segoe UI, sans-serif" font-size="20">Completed</text>
+  <text x="140" y="160" fill="#aeb1b6" font-family="Segoe UI, sans-serif" font-size="18">Turn 28s · First token 1.2s · 96 tok/s</text>
+  <text x="140" y="212" fill="#f0f1f2" font-family="Segoe UI, sans-serif" font-size="21">Add local search to the sample project</text>
+  <text x="140" y="260" fill="#92969d" font-family="Segoe UI, sans-serif" font-size="19">Sample search is ready, with keyboard tests included.</text>
+  <text x="140" y="292" fill="#92969d" font-family="Segoe UI, sans-serif" font-size="19">All data shown here is documentation-only demo copy.</text>
+
+  <rect x="650" y="72" width="510" height="456" rx="22" fill="#292a2d"/>
+  <text x="680" y="116" fill="#f2f3f4" font-family="Segoe UI, sans-serif" font-size="22" font-weight="650">Search loaded conversation</text>
+  <rect x="680" y="140" width="450" height="58" rx="14" fill="#202124" stroke="#6f8fca" stroke-width="2"/>
+  <circle cx="708" cy="169" r="9" fill="none" stroke="#aeb1b6" stroke-width="3"/>
+  <path d="M715 176l8 8" stroke="#aeb1b6" stroke-width="3" stroke-linecap="round"/>
+  <text x="740" y="177" fill="#e8e9eb" font-family="Segoe UI, sans-serif" font-size="19">sample keyword</text>
+  <text x="680" y="235" fill="#aeb1b6" font-family="Segoe UI, sans-serif" font-size="18">2 results</text>
+  <rect x="680" y="256" width="450" height="104" rx="14" fill="#34363a"/>
+  <text x="700" y="290" fill="#aeb1b6" font-family="Segoe UI, sans-serif" font-size="17">Item 2 / 8</text>
+  <text x="700" y="328" fill="#f0f1f2" font-family="Segoe UI, sans-serif" font-size="18">…highlight the sample keyword and jump to the result…</text>
+  <rect x="680" y="376" width="450" height="104" rx="14" fill="#34363a"/>
+  <text x="700" y="410" fill="#aeb1b6" font-family="Segoe UI, sans-serif" font-size="17">Item 6 / 8</text>
+  <text x="700" y="448" fill="#f0f1f2" font-family="Segoe UI, sans-serif" font-size="18">…show nearby context for the sample keyword…</text>
+</svg>

@@ -16,6 +16,12 @@ A subtle user-Turn navigation rail attached to the left edge of the active DeepS
 
 The rail stays quiet by default: each loaded user Turn is one short dash, and only the current reading position is highlighted. On hover, nearby markers expand into a stepped shape for accurate selection, then return to their compact state when the pointer leaves.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/feature-preview.en.svg" width="960" alt="Turn preview and local search shown with test copy" />
+</p>
+
+> Every prompt, answer, metric, and search result in the illustration is fixed test copy. No real conversation content is used.
+
 <table>
   <tr>
     <th>Compact</th>
@@ -31,7 +37,7 @@ The rail stays quiet by default: each loaded user Turn is one short dash, and on
   </tr>
 </table>
 
-The cover visual summarizes the real interaction: hovering reveals Turn position, status, duration, TTFT, throughput, prompt, and model-answer context. Search shows each keyword in context and jumps directly to the matching Turn.
+The feature illustration summarizes the real interaction: hovering reveals Turn position, status, duration, TTFT, throughput, prompt, and model-answer context. Search shows each keyword in context and jumps directly to the matching Turn.
 
 ### Typical flow
 
