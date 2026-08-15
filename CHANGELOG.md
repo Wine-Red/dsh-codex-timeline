@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 - 2026-08-15
+
+- Move the timeline settings into 设置 → 插件 → 插件配置 as a standalone card that matches the official plugin-card style (disclosing header, field rows, overridden badges).
+- Reduce the settings surface to one enable toggle plus three tuning sliders: distance from the panel's left edge (0–120 px), vertical offset from the panel center (–200–200 px), and marker spacing (6–40 px).
+- Persist every preference through the Host settings document (settings.yaml) via a dedicated `/codex-timeline/settings` route, replacing browser-localStorage persistence; values survive reloads, browser switches, and other profiles of the same deployment.
+- Anchor the top-left ⋮ / search controls independently: position offsets move only the marker column, never the controls.
+- Make the left-offset slider strictly non-negative (0 = flush with the conversation panel's left edge).
+- Add `id`/`name` attributes and `label` associations to every form field (sliders, search inputs) for autofill and accessibility.
+
 ## 0.1.2 - 2026-08-15
 
 - Replace the Codex reference crops with screenshots captured from DSH `0.1.0-rc.6`.

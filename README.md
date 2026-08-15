@@ -3,7 +3,7 @@
 [English](README.en.md) | 中文
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/cover.png" width="960" alt="DSH Codex Timeline 封面：对话左侧的轮次轨道、预览和搜索" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/cover.png" width="960" alt="DSH Codex Timeline 封面：对话左侧的轮次轨道、预览和搜索" />
 </p>
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
@@ -17,7 +17,7 @@
 轨道默认保持安静：每个已加载的用户 Turn 对应一条短横，只有当前阅读位置高亮。鼠标移入后，附近标记以阶梯状展开，便于准确选择；移出后立即恢复紧凑状态。
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/feature-preview.zh.svg" width="960" alt="使用测试文案展示轮次预览和本地搜索" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/feature-preview.zh.svg" width="960" alt="使用测试文案展示轮次预览和本地搜索" />
 </p>
 
 > 功能示意图与下方 DSH 实机截图中的提问、回答、指标和搜索结果均为专用测试文案，不包含真实会话内容。
@@ -30,8 +30,8 @@
     <th>悬停展开</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/timeline-default-dsh.png" width="460" alt="DSH 实机中的默认短横轮次轨道" /></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/timeline-hover-dsh.png" width="460" alt="DSH 实机中悬停展开并显示测试预览的轮次轨道" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/timeline-default-dsh.png" width="460" alt="DSH 实机中的默认短横轮次轨道" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/timeline-hover-dsh.png" width="460" alt="DSH 实机中悬停展开并显示测试预览的轮次轨道" /></td>
   </tr>
   <tr>
     <td>低对比度，不占用正文宽度</td>
@@ -122,7 +122,8 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 - 搜索按钮在浏览器本地检索已加载 Turn 的提问与模型正文，直接展示并高亮关键词上下文；不会发给模型或写入遥测。
 - 少于 3 条用户消息时自动隐藏；如果仍有更早历史未加载，不会提前隐藏。
 - 窄屏使用折叠入口，不遮挡消息、输入框或正文宽度。
-- 设置页提供启用、默认显示、全部/稀疏密度和跟随高亮；持久化使用 DSH settings。
+- 设置页（设置 → 插件 → 插件配置）提供启用开关和三个滑块：距左侧距离（0–120 px）、向中部偏移（上下 ±200 px）、标记间距（6–40 px）；所有偏好即时写入 DSH settings（settings.yaml），刷新、换浏览器均保持。
+- 左上角的三点/搜索控件固定不动，位置滑块只调整时间线标记列本身。
 
 ## 隐私
 
@@ -139,7 +140,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.2.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.2.0.tgz"
 dsh --profile web --dump-config
 ```
 

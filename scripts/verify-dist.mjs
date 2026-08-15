@@ -53,6 +53,10 @@ for (const required of [
   "tokensPerSecond",
   "prefers-reduced-motion",
   "items.length < 3 && !hasMore",
+  "settings.leftOffset",
+  "--turn-nav-spacing",
+  "--turn-nav-center",
+  "/codex-timeline/settings",
 ]) {
   if (!client.includes(required)) fail(`client is missing ${required}`);
 }
@@ -65,10 +69,20 @@ for (const forbidden of [
   if (client.includes(forbidden))
     fail(`client contains forbidden text ${forbidden}`);
 }
-if (
-  !host.includes('TURN_NAVIGATION_SETTINGS_NAMESPACE = "ui-turn-navigation"')
-) {
-  fail("host settings schema is missing");
+if (!host.includes('CONVERSATION_SETTINGS_NAMESPACE = "ui-conversation"')) {
+  fail("host conversation settings schema is missing");
+}
+if (!host.includes('TIMELINE_SETTINGS_NAMESPACE = "dsh-codex-timeline"')) {
+  fail("host timeline settings namespace is missing");
+}
+if (!host.includes('path: "/codex-timeline"')) {
+  fail("host timeline settings route is missing");
+}
+if (host.includes("TURN_NAVIGATION_SETTINGS_NAMESPACE")) {
+  fail("host must not register a ui-turn-navigation settings namespace");
+}
+if (!client.includes('"settings.plugin.item"')) {
+  fail("client plugin-config settings card is missing");
 }
 if (!invariant.includes('PACKAGE_NAME = "dsh-codex-timeline"')) {
   fail("invariant ownership is stale");
