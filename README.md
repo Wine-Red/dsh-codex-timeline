@@ -2,11 +2,42 @@
 
 [English](README.en.md) | 中文
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/cover.png" width="960" alt="DSH Codex Timeline 封面：对话左侧的轮次轨道、预览和搜索" />
+</p>
+
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/npm/l/dsh-codex-timeline.svg)](LICENSE)
 
 为 DeepSeek Harness Web 长会话提供一个贴在 Chat 正文左侧、低干扰的用户 Turn 导航轨道。它只标记用户发起的轮次，能随正文滚动高亮、快速跳转，并在本地搜索已经加载的提问与模型回答。
+
+## 界面预览
+
+轨道默认保持安静：每个已加载的用户 Turn 对应一条短横，只有当前阅读位置高亮。鼠标移入后，附近标记以阶梯状展开，便于准确选择；移出后立即恢复紧凑状态。
+
+<table>
+  <tr>
+    <th>默认状态</th>
+    <th>悬停展开</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-compact.png" width="64" alt="紧凑的短横轮次标记" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-hover.png" width="64" alt="悬停后阶梯状展开的轮次标记" /></td>
+  </tr>
+  <tr>
+    <td>低对比度，不占用正文宽度</td>
+    <td>高亮跟随指针，离开后恢复当前 Turn</td>
+  </tr>
+</table>
+
+封面中的预览卡片对应实际交互：悬停可查看轮次、状态、耗时、首 token 时间、速度、提问与模型回答；搜索入口会直接展示关键词及其前后文，并可跳转到对应 Turn。
+
+### 使用路径
+
+1. 滚动正文，轨道自动指示当前 Turn。
+2. 悬停查看两行提问与两行回答，点击或按 Enter / Space 跳转。
+3. 使用轨道顶部搜索按钮检索已加载内容；如有更早历史，可通过三点按钮调用 DSH 原生加载流程。
 
 ## 兼容性
 
@@ -100,7 +131,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.0.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.1.tgz"
 dsh --profile web --dump-config
 ```
 

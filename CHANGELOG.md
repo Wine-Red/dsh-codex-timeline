@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-08-15
+
+- Add a purpose-built project cover and a bilingual visual feature tour.
+- Document the compact and stepped-hover timeline states with real UI captures.
+
 ## 0.1.0 - 2026-08-15
 
 - Add a compact user-Turn navigation rail to the left edge of active Chat content.

@@ -2,11 +2,42 @@
 
 English | [中文](README.md)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/cover.png" width="960" alt="DSH Codex Timeline cover showing the turn rail, preview, and search" />
+</p>
+
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/npm/l/dsh-codex-timeline.svg)](LICENSE)
 
 A subtle user-Turn navigation rail attached to the left edge of the active DeepSeek Harness Web Chat transcript. It highlights the Turn at the reading position, jumps to any loaded prompt, and searches loaded prompts and model answers locally.
+
+## Interface tour
+
+The rail stays quiet by default: each loaded user Turn is one short dash, and only the current reading position is highlighted. On hover, nearby markers expand into a stepped shape for accurate selection, then return to their compact state when the pointer leaves.
+
+<table>
+  <tr>
+    <th>Compact</th>
+    <th>Hover expansion</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-compact.png" width="64" alt="Compact short-dash Turn markers" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-hover.png" width="64" alt="Turn markers expanding into steps on hover" /></td>
+  </tr>
+  <tr>
+    <td>Low contrast without reducing transcript width</td>
+    <td>Pointer-following highlight that restores the current Turn on leave</td>
+  </tr>
+</table>
+
+The cover visual summarizes the real interaction: hovering reveals Turn position, status, duration, TTFT, throughput, prompt, and model-answer context. Search shows each keyword in context and jumps directly to the matching Turn.
+
+### Typical flow
+
+1. Scroll the transcript and let the rail track the current Turn.
+2. Hover for two prompt lines and two answer lines; click or press Enter / Space to jump.
+3. Search loaded content from the rail, or use the top ellipsis to invoke DSH's existing history loader when earlier Turns are available.
 
 ## Compatibility
 
@@ -100,7 +131,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.0.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.1.tgz"
 dsh --profile web --dump-config
 ```
 
