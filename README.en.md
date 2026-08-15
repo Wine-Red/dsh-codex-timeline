@@ -3,7 +3,7 @@
 English | [中文](README.md)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/cover.png" width="960" alt="DSH Codex Timeline cover showing the turn rail, preview, and search" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/cover.png" width="960" alt="DSH Codex Timeline cover showing the turn rail, preview, and search" />
 </p>
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
@@ -17,10 +17,12 @@ A subtle user-Turn navigation rail attached to the left edge of the active DeepS
 The rail stays quiet by default: each loaded user Turn is one short dash, and only the current reading position is highlighted. On hover, nearby markers expand into a stepped shape for accurate selection, then return to their compact state when the pointer leaves.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/feature-preview.en.svg" width="960" alt="Turn preview and local search shown with test copy" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/feature-preview.en.svg" width="960" alt="Turn preview and local search shown with test copy" />
 </p>
 
-> Every prompt, answer, metric, and search result in the illustration is fixed test copy. No real conversation content is used.
+> Every prompt, answer, metric, and search result in the illustration and DSH captures below is dedicated test copy. No real conversation content is used.
+
+Both images below were captured from DSH `0.1.0-rc.6` with this plugin installed. They show the same real rail in its compact and pointer-hover states:
 
 <table>
   <tr>
@@ -28,8 +30,8 @@ The rail stays quiet by default: each loaded user Turn is one short dash, and on
     <th>Hover expansion</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-compact.png" width="64" alt="Compact short-dash Turn markers" /></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.1/docs/images/timeline-hover.png" width="64" alt="Turn markers expanding into steps on hover" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/timeline-default-dsh.png" width="460" alt="Compact Turn rail captured from DSH" /></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.1.2/docs/images/timeline-hover-dsh.png" width="460" alt="Hover-expanded Turn rail and test preview captured from DSH" /></td>
   </tr>
   <tr>
     <td>Low contrast without reducing transcript width</td>
@@ -137,7 +139,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.1.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.1.2.tgz"
 dsh --profile web --dump-config
 ```
 

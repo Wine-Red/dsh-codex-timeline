@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-08-15
+
+- Replace the Codex reference crops with screenshots captured from DSH `0.1.0-rc.6`.
+- Capture both compact and hover-expanded states from a dedicated five-Turn test conversation.
+- Keep all visible screenshot content limited to explicit documentation test copy.
+
 ## 0.1.1 - 2026-08-15
 
 - Add a purpose-built project cover and a bilingual visual feature tour.
