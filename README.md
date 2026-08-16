@@ -10,7 +10,7 @@
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-为 DeepSeek Harness Web 长会话提供一个贴在 Chat 正文左侧、低干扰的用户 Turn 导航轨道。它只标记用户发起的轮次，能随正文滚动高亮、快速跳转，并在本地搜索已经加载的提问与模型回答。
+为 DeepSeek Harness Web 长会话提供一个贴在 Chat 正文左侧、低干扰的用户 Turn 导航轨道。它只标记用户发起的轮次，能随正文滚动高亮、快速跳转，并可自动展开全部历史轮次与预览。
 
 ## 界面预览
 
@@ -45,7 +45,7 @@
 
 1. 滚动正文，轨道自动指示当前 Turn。
 2. 悬停查看两行提问与两行回答，点击或按 Enter / Space 跳转。
-3. 使用轨道顶部搜索按钮检索已加载内容；如有更早历史，可通过三点按钮调用 DSH 原生加载流程。
+3. 开启“自动加载全部历史”后，每 80 ms 继续调用一次 DSH 原生历史分页，直到全部旧轮次展开。
 
 ## 兼容性
 
@@ -119,10 +119,11 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 - 浮层显示“第 x / y 条”、时间、状态、两行用户提问、两行模型回答，以及数据可得时的本轮用时、首 token 延迟和 tok/s。
 - 点击、Enter 或 Space 跳转；方向键、Home 和 End 可移动焦点；支持 `focus-visible` 与 `prefers-reduced-motion`。
 - 顶部三点按钮复用 DSH 正式分页流程加载更早历史；prepend 后使用稳定节点 ID 保持滚动锚点。
-- 搜索按钮在浏览器本地检索已加载 Turn 的提问与模型正文，直接展示并高亮关键词上下文；不会发给模型或写入遥测。
+- “自动加载全部历史”以 80 ms 间隔连续调用 DSH 原生历史分页，直到完整旧正文进入 Chat。
+- 搜索按钮在浏览器本地检索可用的 Turn 预览与已加载正文，直接展示并高亮关键词上下文；不会发给模型或写入遥测。
 - 少于 3 条用户消息时自动隐藏；如果仍有更早历史未加载，不会提前隐藏。
 - 窄屏使用折叠入口，不遮挡消息、输入框或正文宽度。
-- 设置页（设置 → 插件 → 插件配置）提供启用开关和三个滑块：距左侧距离（0–120 px）、向中部偏移（上下 ±200 px）、标记间距（6–40 px）；所有偏好即时写入 DSH settings（settings.yaml），刷新、换浏览器均保持。
+- 设置页（设置 → 插件 → 插件配置）提供启用开关、“自动加载全部历史”和三个位置/间距滑块；所有偏好即时写入 DSH settings（settings.yaml），刷新、换浏览器均保持。
 - 左上角的三点/搜索控件固定不动，位置滑块只调整时间线标记列本身。
 
 ## 隐私

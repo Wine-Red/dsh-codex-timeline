@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 - 2026-08-16
+
+- Add an optional automatic history loader that repeatedly requests the next official DSH history page at 80 ms intervals until the complete transcript is materialized.
+- Add stable per-Turn favorites and branch actions without changing the underlying Chat snapshot contract.
+- Refine marker hover/focus behavior, keep the reading-position marker subtle while browsing, and bridge the pointer gap to the tooltip.
+- Widen the desktop Turn tooltip and keep its ordinal, dated timestamp, status, and actions on one stable metadata line.
+- Render answer summaries as strict two-line plain-text previews without Markdown rendering or partially clipped lines.
+- Validate the emitted browser bundle syntax and module-loader registration during release checks.
+
 ## 0.2.0 - 2026-08-15
 
 - Move the timeline settings into 设置 → 插件 → 插件配置 as a standalone card that matches the official plugin-card style (disclosing header, field rows, overridden badges).
