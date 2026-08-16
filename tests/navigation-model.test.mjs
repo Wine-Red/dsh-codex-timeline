@@ -32,7 +32,15 @@ function fixture(order = [5, 6]) {
     ],
     [
       "tail5",
-      { kind: "turn-tail", data: { ttftMs: 1250, tokensPerSecond: 88.4 } },
+      {
+        kind: "turn-tail",
+        data: {
+          ttftMs: 1250,
+          tokensPerSecond: 88.4,
+          closing: { finalNode: { seq: 42 } },
+          branchUnavailable: false,
+        },
+      },
     ],
     ["tool5", { kind: "tool", data: {} }],
     [
@@ -79,6 +87,9 @@ test("projects one stable marker per user Turn and keeps official numbering", ()
   assert.equal(items[0].answer, "已保持锚点。\n流式期间不会回到底部。");
   assert.equal(items[0].ttftMs, 1250);
   assert.equal(items[0].tokensPerSecond, 88.4);
+  assert.equal(items[0].branchSeq, 42);
+  assert.equal(items[0].branchUnavailable, false);
+  assert.equal(items[1].branchUnavailable, true);
   assert.equal(items[1].status, "waiting");
 });
 

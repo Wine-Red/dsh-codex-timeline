@@ -10,7 +10,7 @@ English | [中文](README.md)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-A subtle user-Turn navigation rail attached to the left edge of the active DeepSeek Harness Web Chat transcript. It highlights the Turn at the reading position, jumps to any loaded prompt, and searches loaded prompts and model answers locally.
+A subtle user-Turn navigation rail attached to the left edge of the active DeepSeek Harness Web Chat transcript. It highlights the Turn at the reading position, jumps between prompts, and can automatically materialize every historical Turn and preview.
 
 ## Interface tour
 
@@ -45,7 +45,7 @@ The feature illustration summarizes the real interaction: hovering reveals Turn 
 
 1. Scroll the transcript and let the rail track the current Turn.
 2. Hover for two prompt lines and two answer lines; click or press Enter / Space to jump.
-3. Search loaded content from the rail, or use the top ellipsis to invoke DSH's existing history loader when earlier Turns are available.
+3. Enable “Automatically load full history” to call DSH's existing history pager every 80 ms until every older Turn is materialized.
 
 ## Compatibility
 
@@ -119,10 +119,11 @@ Restart DSH Web to return to the built-in Conversation UI.
 - Shows item x/y, time, status, two prompt lines, two model-answer lines, and real Turn duration, TTFT, and tok/s when available.
 - Supports click, Enter, Space, arrow keys, Home, End, `focus-visible`, and `prefers-reduced-motion`.
 - Reuses the official DSH history loader behind a compact top ellipsis; stable node IDs preserve the reader anchor after a prepend.
-- Searches loaded prompt and model-answer text locally, showing highlighted keyword context. Search data is never sent to the model or telemetry.
+- “Automatically load full history” repeatedly calls DSH's native history pager at 80 ms intervals until the complete old transcript is rendered in Chat.
+- Searches available Turn previews and materialized transcript text locally, showing highlighted keyword context. Search data is never sent to the model or telemetry.
 - Hides automatically below three user messages, unless earlier history still exists.
 - Collapses on narrow screens without covering the composer or reducing message readability.
-- The settings page (Settings → Plugins → Plugin configuration) offers an enable toggle and three sliders: distance from the left edge (0–120 px), vertical offset from the panel center (–200–200 px), and marker spacing (6–40 px); every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
+- The settings page (Settings → Plugins → Plugin configuration) offers an enable toggle, “Automatically load full history,” and three position/spacing sliders; every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
 - The top-left ⋮ / search controls stay anchored; the position sliders move only the marker column.
 
 ## Privacy

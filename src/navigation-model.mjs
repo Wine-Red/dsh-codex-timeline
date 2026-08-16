@@ -101,6 +101,10 @@ export function buildTurnNavigationIndex(chat, pending, running) {
       ),
       startTime: turn.start?.time,
       endTime: turn.end?.time,
+      ...(tail?.closing?.finalNode?.seq === undefined
+        ? {}
+        : { branchSeq: tail.closing.finalNode.seq }),
+      branchUnavailable: tail?.branchUnavailable ?? true,
       ...(tail?.ttftMs === undefined ? {} : { ttftMs: tail.ttftMs }),
       ...(tail?.tokensPerSecond === undefined
         ? {}

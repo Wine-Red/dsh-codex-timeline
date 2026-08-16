@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { Script } from "node:vm";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (relative) => readFile(path.join(root, relative), "utf8");
@@ -20,6 +21,14 @@ const [manifestSource, compatibilitySource, patch, client, host, invariant] =
   ]);
 const manifest = JSON.parse(manifestSource);
 const compatibility = JSON.parse(compatibilitySource);
+
+try {
+  new Script(client, { filename: "lib/client.js" });
+} catch (error) {
+  fail(
+    `client bundle is not valid JavaScript: ${error instanceof Error ? error.message : String(error)}`,
+  );
+}
 
 if (manifest.name !== "dsh-codex-timeline") fail("unexpected package name");
 if (manifest.private === true) fail("package is private");
