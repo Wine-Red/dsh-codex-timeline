@@ -51,9 +51,9 @@ The feature illustration summarizes the real interaction: hovering reveals Turn 
 
 This release supports only the following verified combination. It intentionally declares no broader compatibility range:
 
-- DSH: `0.1.0-rc.6`
-- Verified DSH commit: `47f943859bef60e4160492346772ded9b24f765a`
-- Adapted package: `@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
+- Verified DSH: `0.1.0-rc.7`
+- Verified DSH commit: `99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
+- Bundled adapter source: `@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
 - Node.js: `^22.19.0 || >=24.0.0`
 
 DSH rc.6 does not expose a public Chat gutter/navigation slot. This package uses the official `dsh.bundle.patch` mechanism to disable the fixed `ui-conversation` row and insert an exact rc.6 Conversation adapter. The adapter declares a controlled navigation slot and registers the timeline into it. It does not modify the global DSH installation.

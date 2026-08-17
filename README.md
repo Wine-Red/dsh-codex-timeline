@@ -51,9 +51,9 @@
 
 当前版本只支持以下已验证组合，不声明更宽的兼容范围：
 
-- DSH：`0.1.0-rc.6`
-- 已验证 DSH commit：`47f943859bef60e4160492346772ded9b24f765a`
-- 被适配的包：`@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
+- 已验证 DSH：`0.1.0-rc.7`
+- 已验证 DSH commit：`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
+- 内嵌适配器来源：`@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
 - Node.js：`^22.19.0 || >=24.0.0`
 
 原因是 rc.6 尚未暴露外部 Chat gutter/navigation slot。本包通过正式的 `dsh.bundle.patch` 禁用固定的 `ui-conversation` 配置行，再插入一个精确锁定 rc.6 的 Conversation adapter；adapter 声明受控导航 slot，并在其中注册时间线。它不会修改 DSH 的全局安装目录。

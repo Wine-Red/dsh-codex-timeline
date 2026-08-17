@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 - 2026-08-17
+
+- Support DSH `0.1.0-rc.7` by registering the plugin settings card with its Host settings namespace as the keyed-slot key.
+- Retain the rc.6 list-slot `id` alongside the rc.7 `key` so the emitted browser adapter remains loadable across both slot contracts.
+- Pin the release metadata and peer dependencies to the officially tagged DSH rc.7 runtime while retaining the documented rc.6 conversation adapter source.
+
 ## 0.3.0 - 2026-08-16
 
 - Add an optional automatic history loader that repeatedly requests the next official DSH history page at 80 ms intervals until the complete transcript is materialized.
