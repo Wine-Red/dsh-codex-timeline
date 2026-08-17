@@ -12,6 +12,10 @@ const patch = await readFile(
   new URL("../cordis.patch.yml", import.meta.url),
   "utf8",
 );
+const installer = await readFile(
+  new URL("../install.ps1", import.meta.url),
+  "utf8",
+);
 
 test("ships as a public DSH bundle, not a profile or plain dependency", () => {
   assert.equal(manifest.name, "dsh-codex-timeline");
@@ -42,6 +46,14 @@ test("pins every DSH runtime compatibility edge to rc.7", () => {
     if (name.startsWith("@deepseek-ai/dsh-"))
       assert.equal(version, "0.1.0-rc.7", name);
   }
+});
+
+test("installer checks the verified DSH version", () => {
+  assert.match(installer, /\$expectedVersion\s*=\s*['"]0\.1\.0-rc\.7['"]/u);
+  assert.doesNotMatch(
+    installer,
+    /expectedVersion\s*=\s*['"]0\.1\.0-rc\.6['"]/u,
+  );
 });
 
 test("npm payload excludes local installers, source maps, and tarballs", () => {
