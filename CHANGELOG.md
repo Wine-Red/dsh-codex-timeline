@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 - 2026-08-17
+
+- Align the Windows installer version check and status messages with the verified DSH `0.1.0-rc.7` runtime.
+- Add a package contract test to prevent the installer from regressing to the older rc.6 runtime check.
+
 ## 0.3.1 - 2026-08-17
 
 - Support DSH `0.1.0-rc.7` by registering the plugin settings card with its Host settings namespace as the keyed-slot key.
