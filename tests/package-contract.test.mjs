@@ -28,11 +28,11 @@ test("ships as a public DSH bundle, not a profile or plain dependency", () => {
   );
 });
 
-test("pins every DSH compatibility edge to rc.6", () => {
-  assert.equal(compatibility.dsh.version, "0.1.0-rc.6");
+test("pins every DSH runtime compatibility edge to rc.7", () => {
+  assert.equal(compatibility.dsh.version, "0.1.0-rc.7");
   assert.equal(
     compatibility.dsh.commit,
-    "47f943859bef60e4160492346772ded9b24f765a",
+    "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca",
   );
   assert.equal(
     compatibility.upstream.package,
@@ -40,7 +40,7 @@ test("pins every DSH compatibility edge to rc.6", () => {
   );
   for (const [name, version] of Object.entries(manifest.peerDependencies)) {
     if (name.startsWith("@deepseek-ai/dsh-"))
-      assert.equal(version, "0.1.0-rc.6", name);
+      assert.equal(version, "0.1.0-rc.7", name);
   }
 });
 

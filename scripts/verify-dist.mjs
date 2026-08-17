@@ -41,7 +41,7 @@ if (
   !patch.includes("id: codex-timeline") ||
   !patch.includes("name: dsh-codex-timeline")
 ) {
-  fail("bundle does not disable and replace the rc.6 conversation row");
+  fail("bundle does not disable and replace the conversation row");
 }
 if (
   !client.startsWith(
@@ -90,7 +90,10 @@ if (!host.includes('path: "/codex-timeline"')) {
 if (host.includes("TURN_NAVIGATION_SETTINGS_NAMESPACE")) {
   fail("host must not register a ui-turn-navigation settings namespace");
 }
-if (!client.includes('"settings.plugin.item"')) {
+if (
+  !client.includes('"settings.plugin.item"') ||
+  !client.includes('key: "dsh-codex-timeline"')
+) {
   fail("client plugin-config settings card is missing");
 }
 if (!invariant.includes('PACKAGE_NAME = "dsh-codex-timeline"')) {
