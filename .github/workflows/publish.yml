@@ -1,6 +1,7 @@
 name: Publish npm
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
@@ -25,6 +26,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
       - name: Verify release tag
+        if: github.event_name == 'release'
         shell: bash
         run: |
           expected="v$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")"
