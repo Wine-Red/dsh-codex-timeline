@@ -51,12 +51,13 @@
 
 当前版本只支持以下已验证组合，不声明更宽的兼容范围：
 
-- 已验证 DSH：`0.1.0-rc.7`
-- 已验证 DSH commit：`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
-- 内嵌适配器来源：`@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
+- 已验证 DSH：`0.1.0-rc.7`、`0.1.0-rc.8`
+- rc.7 已验证 commit：`99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
 - Node.js：`^22.19.0 || >=24.0.0`
 
-原因是 rc.6 尚未暴露外部 Chat gutter/navigation slot。本包通过正式的 `dsh.bundle.patch` 禁用固定的 `ui-conversation` 配置行，再插入一个精确锁定 rc.6 的 Conversation adapter；adapter 声明受控导航 slot，并在其中注册时间线。它不会修改 DSH 的全局安装目录。
+插件不再禁用或替换官方 `ui-conversation`。rc.7/rc.8 尚未提供专用的 Chat 导航 slot，因此插件使用官方增量 `conversation.session.header.actions` 作为生命周期挂载点，并通过两个版本都存在的稳定 `data-chat-flow` / `data-chat-anchor-key` DOM 契约把原有 0.3.2 时间线挂到聊天根节点。rc.8 图片适配同样不接管 Conversation。
+
+适配器、Host、设置或 slot 注册失败时，只会禁用时间线并记录错误；官方会话列表、会话正文和输入区始终由 DSH 自己渲染。
 
 不要在其他 DSH 版本上强行安装。升级 DSH 前请先卸载本插件，并按“升级检查”重新审计契约。
 

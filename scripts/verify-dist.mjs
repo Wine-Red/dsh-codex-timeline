@@ -10,15 +10,25 @@ const fail = (message) => {
   throw new Error(`distribution contract failed: ${message}`);
 };
 
-const [manifestSource, compatibilitySource, patch, client, host, invariant] =
-  await Promise.all([
-    read("package.json"),
-    read("compatibility.json"),
-    read("cordis.patch.yml"),
-    read("lib/client.js"),
-    read("lib/index.js"),
-    read("lib/invariant.js"),
-  ]);
+const [
+  manifestSource,
+  compatibilitySource,
+  patch,
+  client,
+  host,
+  invariant,
+  clientTypes,
+  hostTypes,
+] = await Promise.all([
+  read("package.json"),
+  read("compatibility.json"),
+  read("cordis.patch.yml"),
+  read("lib/client.js"),
+  read("lib/index.js"),
+  read("lib/invariant.js"),
+  read("lib/types/client/index.d.ts"),
+  read("lib/types/index.d.ts"),
+]);
 const manifest = JSON.parse(manifestSource);
 const compatibility = JSON.parse(compatibilitySource);
 
@@ -36,12 +46,12 @@ if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") {
   fail("missing dsh.bundle.patch");
 }
 if (
-  !patch.includes("id: ui-conversation") ||
-  !patch.includes("disabled: true") ||
+  patch.includes("id: ui-conversation") ||
+  patch.includes("disabled: true") ||
   !patch.includes("id: codex-timeline") ||
   !patch.includes("name: dsh-codex-timeline")
 ) {
-  fail("bundle does not disable and replace the conversation row");
+  fail("bundle must add the timeline without replacing Conversation");
 }
 if (
   !client.startsWith(
@@ -51,7 +61,9 @@ if (
   fail("client module id does not match the package name");
 }
 for (const required of [
-  '"conversation.chat.navigation"',
+  '"conversation.session.header.actions"',
+  '"conversation.message.images"',
+  "LegacyImageGallery",
   "buildTurnNavigationIndex",
   "IntersectionObserver",
   "ResizeObserver",
@@ -66,6 +78,12 @@ for (const required of [
   "--turn-nav-spacing",
   "--turn-nav-center",
   "/codex-timeline/settings",
+  "function AdditiveTurnNavigation",
+  'document.querySelector("[data-chat-flow]")',
+  'querySelectorAll("[data-chat-anchor-key]")',
+  "react_dom.createPortal",
+  "disabled after startup failure",
+  "function safeSlotInject",
 ]) {
   if (!client.includes(required)) fail(`client is missing ${required}`);
 }
@@ -78,14 +96,23 @@ for (const forbidden of [
   if (client.includes(forbidden))
     fail(`client contains forbidden text ${forbidden}`);
 }
-if (!host.includes('CONVERSATION_SETTINGS_NAMESPACE = "ui-conversation"')) {
-  fail("host conversation settings schema is missing");
+if (host.includes('CONVERSATION_SETTINGS_NAMESPACE = "ui-conversation"')) {
+  fail("host must not register or replace Conversation settings");
+}
+if (`${clientTypes}\n${hostTypes}`.includes("rc.6 conversation")) {
+  fail("type declarations still describe the removed Conversation replacement");
 }
 if (!host.includes('TIMELINE_SETTINGS_NAMESPACE = "dsh-codex-timeline"')) {
   fail("host timeline settings namespace is missing");
 }
 if (!host.includes('path: "/codex-timeline"')) {
   fail("host timeline settings route is missing");
+}
+if (
+  !host.includes("function safeHostInject") ||
+  !host.includes("function safeHostEffect")
+) {
+  fail("host startup isolation is missing");
 }
 if (host.includes("TURN_NAVIGATION_SETTINGS_NAMESPACE")) {
   fail("host must not register a ui-turn-navigation settings namespace");
@@ -101,6 +128,23 @@ if (!invariant.includes('PACKAGE_NAME = "dsh-codex-timeline"')) {
 }
 
 const digest = createHash("sha256").update(client).digest("hex");
+const cssPattern = /\bconst css(?:\$\d+)? = ("(?:\\.|[^"\\])*");/gu;
+const cssLiterals = [...client.matchAll(cssPattern)].map((match) =>
+  JSON.parse(match[1]),
+);
+if (cssLiterals.length !== 23) {
+  fail(
+    `expected 23 original 0.3.2 style blocks, received ${cssLiterals.length}`,
+  );
+}
+const styleDigest = createHash("sha256")
+  .update(cssLiterals.join("\n"))
+  .digest("hex");
+if (styleDigest !== compatibility.adapter?.styleCorpusSha256) {
+  fail(
+    `0.3.2 style corpus changed: expected ${compatibility.adapter?.styleCorpusSha256}, received ${styleDigest}`,
+  );
+}
 const expected = compatibility.adapter?.artifactSha256;
 if (expected === "PENDING") {
   console.warn(`artifact SHA-256 is not pinned yet: ${digest}`);

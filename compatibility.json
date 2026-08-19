@@ -1,20 +1,23 @@
 {
   "schemaVersion": 1,
   "dsh": {
-    "version": "0.1.0-rc.7",
-    "commit": "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca"
+    "version": "0.1.0-rc.8",
+    "verifiedVersions": ["0.1.0-rc.7", "0.1.0-rc.8"],
+    "rc7Commit": "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca"
   },
-  "upstream": {
+  "officialConversation": {
     "package": "@deepseek-ai/dsh-client-ui-conversation",
-    "version": "0.1.0-rc.6",
-    "npmShasum": "e57a4076dfe4c05dbe21f06cbd1b25ed9ac17d54"
+    "ownership": "preserved",
+    "verifiedVersions": ["0.1.0-rc.7", "0.1.0-rc.8"]
   },
   "adapter": {
-    "mode": "bundle-disable-and-insert",
-    "disabledRow": "ui-conversation",
+    "mode": "additive-public-lifecycle",
     "insertedRow": "codex-timeline",
     "clientModuleId": "dsh-codex-timeline",
-    "publicSlot": "conversation.chat.navigation",
-    "artifactSha256": "8eb762582cc8d0cdf6e1961f71fb1e532473e8419e9e7a156c5e99e356e38d6b"
+    "publicSlot": "conversation.session.header.actions",
+    "domAnchors": ["data-chat-flow", "data-chat-anchor-key"],
+    "rc8MessageImagesSlot": "conversation.message.images",
+    "styleCorpusSha256": "645a109559d539c3622cb3c7b291f16e17a4b0cc51629377903f70e0e7c11519",
+    "artifactSha256": "51890c1bd6a5234bc7d6c943a58df4abb075a06006afd03c22178769d0d91a9e"
   }
 }
