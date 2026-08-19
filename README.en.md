@@ -49,14 +49,15 @@ The feature illustration summarizes the real interaction: hovering reveals Turn 
 
 ## Compatibility
 
-This release supports only the following verified combination. It intentionally declares no broader compatibility range:
+This release supports only the following verified combinations. It intentionally declares no broader compatibility range:
 
-- Verified DSH: `0.1.0-rc.7`
-- Verified DSH commit: `99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
-- Bundled adapter source: `@deepseek-ai/dsh-client-ui-conversation@0.1.0-rc.6`
+- Verified DSH: `0.1.0-rc.7`, `0.1.0-rc.8`
+- Verified rc.7 commit: `99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
 - Node.js: `^22.19.0 || >=24.0.0`
 
-DSH rc.6 does not expose a public Chat gutter/navigation slot. This package uses the official `dsh.bundle.patch` mechanism to disable the fixed `ui-conversation` row and insert an exact rc.6 Conversation adapter. The adapter declares a controlled navigation slot and registers the timeline into it. It does not modify the global DSH installation.
+The plugin no longer disables or replaces the official `ui-conversation`. DSH rc.7/rc.8 do not yet expose a dedicated Chat navigation slot, so the plugin uses the additive `conversation.session.header.actions` lifecycle seat and the stable `data-chat-flow` / `data-chat-anchor-key` DOM contracts shared by both versions to mount the original 0.3.2 timeline at the Chat root. The rc.8 image adaptation also leaves Conversation ownership untouched.
+
+Adapter, Host, settings, or slot registration failures disable and log only the timeline. DSH continues to own and render the session list, conversation body, and composer.
 
 Do not force-install this release on another DSH version. Remove it before upgrading DSH and repeat the contract audit described below.
 

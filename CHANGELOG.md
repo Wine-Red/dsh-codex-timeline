@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.3 - 2026-08-20
+
+- Keep the complete 0.3.2 interface and style corpus unchanged.
+- Add a narrow rc.8 message-image slot bridge while retaining the rc.7 image component path.
+- Verify both DSH `0.1.0-rc.7` and `0.1.0-rc.8`, with peer ranges capped before rc.9.
+- Keep the bundled Host settings dependency on the rc.7 baseline to prevent cross-version dependency mixing during rc.7 installs.
+- Stop disabling, replacing, or registering any part of the official Conversation plugin.
+- Mount the unchanged 0.3.2 timeline through the additive session-header lifecycle seat and the stable chat-flow/anchor DOM contracts present in rc.7 and rc.8.
+- Isolate Host, settings, and slot startup failures so an adapter failure removes only the timeline and can never suppress the conversation UI.
+- Fail distribution checks if any of the original 0.3.2 style blocks changes.
+
 ## 0.3.2 - 2026-08-17
 
 - Align the Windows installer version check and status messages with the verified DSH `0.1.0-rc.7` runtime.

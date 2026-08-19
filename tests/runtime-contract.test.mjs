@@ -8,6 +8,46 @@ const client = await readFile(
   "utf8",
 );
 
+function clientFactory() {
+  let handoff;
+  runInNewContext(client, {
+    console,
+    fetch: async () => ({ json: async () => ({ ok: true, value: {} }) }),
+    queueMicrotask,
+    window: {
+      __ModuleLoader__: {
+        load(value) {
+          handoff = value;
+        },
+      },
+    },
+  });
+  return handoff.factory;
+}
+
+function universalModuleStub() {
+  const callable = function () {
+    return proxy;
+  };
+  const proxy = new Proxy(callable, {
+    apply() {
+      return proxy;
+    },
+    construct() {
+      return proxy;
+    },
+    get(target, property) {
+      if (property === "prototype") return target.prototype;
+      if (property === Symbol.iterator)
+        return function* iterator() {
+          return undefined;
+        };
+      return proxy;
+    },
+  });
+  return proxy;
+}
+
 test("ships a syntactically valid client bundle", () => {
   assert.doesNotThrow(() => new Script(client, { filename: "lib/client.js" }));
 });
@@ -27,12 +67,53 @@ test("hands the expected module factory to the DSH loader", () => {
   assert.equal(typeof handoff?.factory, "function");
 });
 
-test("declares an owned single-session navigation slot and registers the feature", () => {
+test("an additive slot conflict fails open during real apply", async () => {
+  const stub = universalModuleStub();
+  const plugin = clientFactory()(() => stub);
+  const warnings = [];
+  const errors = [];
+  let registrations = 0;
+  const ctx = {
+    conversationEvents: { entries: () => [{}] },
+    conversationViews: { entries: () => [] },
+    get: () => ({}),
+    locale: { register: () => () => undefined },
+    logger: {
+      error: (message) => errors.push(message),
+      warn: (message) => warnings.push(message),
+    },
+    effect: (install) => install(),
+    slots: {
+      inject: (_name, install) => install(),
+      register: () => {
+        registrations += 1;
+        if (registrations === 1) throw new Error("simulated slot conflict");
+        return () => undefined;
+      },
+      snapshot: () => [{ kind: "single", scope: "session" }],
+      spec: () => ({ kind: "single", scope: "session" }),
+    },
+  };
+
+  assert.doesNotThrow(() => plugin.apply(ctx));
+  await Promise.resolve();
+  assert.equal(registrations, 2, JSON.stringify({ errors, warnings }));
+  assert.deepEqual(warnings, []);
+  assert.ok(
+    errors.some((message) =>
+      message.includes("settings.plugin.item contribution disabled"),
+    ),
+  );
+});
+
+test("uses the official lifecycle seat and stable chat anchors", () => {
   assert.match(
     client,
-    /"conversation\.chat\.navigation": \{\s*kind: "single",\s*scope: "session"/u,
+    /safeSlotInject\(ctx, "conversation\.session\.header\.actions"/u,
   );
-  assert.match(client, /ctx\.slots\.inject\("conversation\.chat\.navigation"/u);
+  assert.match(client, /document\.querySelector\("\[data-chat-flow\]"\)/u);
+  assert.match(client, /querySelectorAll\("\[data-chat-anchor-key\]"\)/u);
+  assert.match(client, /react_dom\.createPortal/u);
 });
 
 test("uses observer-backed geometry and cleans up scheduled work", () => {

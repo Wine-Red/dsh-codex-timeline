@@ -1,10 +1,5 @@
-# DSH 0.1.0-rc.6 has no public Chat gutter slot. This exact compatibility
-# layer disables only the built-in conversation row, then inserts the bundled
-# rc.6 adapter, which declares the slot and mounts the timeline contribution.
-- id: ui-conversation
-  name: "@deepseek-ai/dsh-client-ui-conversation"
-  disabled: true
-
+# Keep the official Conversation row intact. The timeline mounts additively
+# through its public session-header lifecycle seat and stable chat DOM anchors.
 - insert:
     - id: codex-timeline
       name: dsh-codex-timeline
