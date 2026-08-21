@@ -132,22 +132,29 @@ test("keeps paging, keyboard, reduced-motion, search, and settings contracts", (
     "prefers-reduced-motion:reduce",
     "timeline.search.noneEarlier",
     "settings.followHighlight",
-    "items.length < 3 && !hasMore",
+    "located.length === 0 && !hasMore",
   ]) {
     assert.ok(client.includes(value), value);
   }
+  assert.doesNotMatch(
+    client,
+    /items\.length < 3 && !hasMore/u,
+    "the timeline must not hide itself for short sessions",
+  );
 });
 
-test("auto-loads older history every 80ms until the transcript is complete", () => {
-  for (const value of [
+test("removed auto-load-all and made the recent-turns count a setting", () => {
+  for (const dropped of [
     "autoLoadTimerRef",
     "loadOlderRef",
-    "window.setTimeout",
-    "}, 80);",
+    "settings.autoLoadAll",
     "failed to auto-load older history",
+    "autoLoadAll: false",
   ]) {
-    assert.ok(client.includes(value), value);
+    assert.ok(!client.includes(dropped), dropped);
   }
+  assert.match(client, /preferences\.recentTurns \?\? 25/u);
+  assert.match(client, /"settings\.recentTurns"/u);
   assert.doesNotMatch(client, /codex-timeline\/history-index/u);
 });
 

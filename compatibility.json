@@ -1,14 +1,13 @@
 {
   "schemaVersion": 1,
   "dsh": {
-    "version": "0.1.0-rc.8",
-    "verifiedVersions": ["0.1.0-rc.7", "0.1.0-rc.8"],
-    "rc7Commit": "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca"
+    "version": "0.1.1-rc.2",
+    "verifiedVersions": ["0.1.1-rc.2"]
   },
   "officialConversation": {
     "package": "@deepseek-ai/dsh-client-ui-conversation",
     "ownership": "preserved",
-    "verifiedVersions": ["0.1.0-rc.7", "0.1.0-rc.8"]
+    "verifiedVersions": ["0.1.1-rc.2"]
   },
   "adapter": {
     "mode": "additive-public-lifecycle",
@@ -16,8 +15,8 @@
     "clientModuleId": "dsh-codex-timeline",
     "publicSlot": "conversation.session.header.actions",
     "domAnchors": ["data-chat-flow", "data-chat-anchor-key"],
-    "rc8MessageImagesSlot": "conversation.message.images",
+    "messageImagesSlot": "conversation.message.images",
     "styleCorpusSha256": "645a109559d539c3622cb3c7b291f16e17a4b0cc51629377903f70e0e7c11519",
-    "artifactSha256": "51890c1bd6a5234bc7d6c943a58df4abb075a06006afd03c22178769d0d91a9e"
+    "artifactSha256": "5275a01ebc22f4e0fee34fea60da0df375bb67faa4900fd88be8001d166964d5"
   }
 }

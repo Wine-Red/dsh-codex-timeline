@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 - 2026-08-21
+
+- Adapt the verified window to DSH `0.1.1-rc.2` (verify declarations, peer ranges, installer, settings ABI).
+- Show the turn timeline for short sessions too: remove the previous "hide below three user messages" rule, so the rail appears from the first message and only stands down when nothing is loaded and no earlier history exists.
+- Replace the "automatically load full history" toggle with a **turns-shown** setting: the rail lists the RECENT N Turns (default 25, adjustable 5–50 under Settings → Plugins → Plugin configuration) without materializing the transcript; spacing follows the user's own "marker spacing" setting so the rail keeps its original look, loaded Turns highlight the current reading position, and unloaded Turns — from the `lite=1` index — hover to a two-line summary, chain-load on click and stop at the target instead of paging the whole history. Timestamp formatting is cached per locale instead of constructing an `Intl.DateTimeFormat` per marker per render, which was the rail's main jank source.
+- The rail's trigger stack no longer shifts: search / favorite / load-earlier buttons and the marker track keep fixed positions, with the load-earlier button at the bottom of the stack.
+- Index steering Turns too: `kind === "steering"` nodes were missing from the browser index, so clicking such a Turn chained pages forever — they are now indexed with a jumpable anchor (matching the session-index口径), and jumps give up after 30 pages instead of loading the whole history. Jump staging is observable on the rail (loading / locating / landed / failed) and logged to the console.
+- Read the session index without the replay validator: the search route prefers the live event array, then the persisted raw JSONL artifact (`sessionPersistence.readRaw`, ~50ms for a 20k-event log), and only falls back to `readSession`'s full replay when neither is available — the lite request that used to take 6–8s now answers in ~200–400ms. The lite index is cached by session revision.
+- Project turn closure correctly: `turn/end` boundaries carry no surface marker, so they are processed outside the surface gate; never-closed Turns report "unknown" status (a live open turn dedupes to the browser-side status once loaded).
+- Search the COMPLETE session log, not just the loaded window: the Host serves a new `GET /codex-timeline/search?sessionId=&q=` route backed by the `sessionQuery` service, returning one item per matched Turn (real user prompts + assistant text blocks, current surface only); the full-log results merge into the search panel and drawer with an "N from earlier history" hint, and an unloaded result chain-loads and jumps.
+- Degrade gracefully when the deployment does not mount a `sessionQuery` service: the route answers 503 and the browser keeps the previous loaded-window-only search with the "earlier content is not loaded" status.
+- Keep the pure projections (`buildTurnIndex`, `buildTurnSearchIndex`, `extractEventSearchText`, `currentSurfaceSeqs`, `searchWindowedSource`) testable in `src/navigation-model.mjs` and pinned by distribution checks.
+
 ## 0.3.3 - 2026-08-20
 
 - Keep the complete 0.3.2 interface and style corpus unchanged.

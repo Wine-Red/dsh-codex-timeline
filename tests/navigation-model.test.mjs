@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildTurnNavigationIndex,
+  buildTurnIndex,
+  buildTurnSearchIndex,
+  currentSurfaceSeqs,
+  extractEventSearchText,
   normalizeSearchText,
   searchSnippet,
+  searchWindowedSource,
   twoLineSummary,
 } from "../src/navigation-model.mjs";
 
@@ -122,6 +127,25 @@ test("history prepend preserves stable ids, ordinals, and the latest total", () 
   assert.ok(after.every((item) => item.total === 6));
 });
 
+test("indexes steering Turns too, so every session-index Turn is jumpable", () => {
+  const chat = fixture([7]);
+  chat.timeline.turns.set(7, {
+    status: "closed",
+    end: { data: { reason: { kind: "completed" } } },
+  });
+  chat.nodes.set("s7", {
+    kind: "steering",
+    data: { time: 250, content: [{ type: "text", text: "steer mid-turn" }] },
+  });
+  const getTurn = chat.locations.getTurn;
+  chat.locations.getTurn = (turn) => (turn === 7 ? ["s7"] : getTurn(turn));
+  const items = buildTurnNavigationIndex(chat, [], false);
+  const item = items.find((candidate) => candidate.id === "turn:7");
+  assert.ok(item !== void 0, "steering Turn must be indexed");
+  assert.equal(item.anchorKey, "s7");
+  assert.equal(item.summary, "steer mid-turn");
+});
+
 test("search normalizes text and returns keyword context", () => {
   const query = normalizeSearchText("ｍｉｃｒｏ");
   const snippet = searchSnippet("prefix Search MICRO sign suffix", query);
@@ -131,4 +155,207 @@ test("search normalizes text and returns keyword context", () => {
     /prefix Search MICRO sign suffix/,
   );
   assert.equal(twoLineSummary("one\n\n two\nthree"), "one\ntwo");
+});
+
+function searchEvent(seq, type, data, surfaceOp = "append") {
+  return { seq, type, time: 1000 + seq, data, surfaceOp };
+}
+
+function searchFixture() {
+  return [
+    searchEvent(0, "turn/start", { turn: 1 }),
+    searchEvent(1, "user/message", {
+      turn: undefined,
+      source: { kind: "user" },
+      content: [{ type: "text", text: "修复分页" }],
+    }),
+    searchEvent(2, "assistant/message", {
+      message: {
+        content: [{ type: "text", text: "已保持锚点。" }],
+      },
+    }),
+    searchEvent(3, "turn/end", { turn: 1, reason: { kind: "completed" } }),
+    searchEvent(4, "turn/start", { turn: 2 }),
+    searchEvent(5, "user/message", {
+      source: { kind: "user" },
+      content: [{ type: "text", text: "Search MICRO sign" }],
+    }),
+    searchEvent(6, "assistant/message", {
+      message: {
+        content: [
+          { type: "text", text: "全角 ｍｉｃｒｏ 也匹配。" },
+          { type: "tool-call", name: "grep", arguments: "MICRO" },
+        ],
+      },
+    }),
+    searchEvent(7, "tool/call", { name: "grep", arguments: "MICRO" }),
+    searchEvent(8, "todo/write", {
+      todos: [{ status: "pending", content: "MICRO todo" }],
+    }),
+    searchEvent(9, "turn/end", {
+      turn: 2,
+      reason: { kind: "error", error: { message: "boom" } },
+    }),
+  ];
+}
+
+test("extracts semantic text per event kind", () => {
+  assert.equal(extractEventSearchText(searchFixture()[1]), "修复分页");
+  assert.equal(
+    extractEventSearchText(searchFixture()[6]),
+    "全角 ｍｉｃｒｏ 也匹配。\ngrep\nMICRO",
+  );
+  assert.equal(extractEventSearchText(searchFixture()[7]), "grep\nMICRO");
+  assert.equal(
+    extractEventSearchText(searchFixture()[8]),
+    "pending\nMICRO todo",
+  );
+  assert.equal(extractEventSearchText(searchFixture()[9]), "error\nboom");
+  assert.equal(extractEventSearchText(searchFixture()[0]), "");
+});
+
+test("folds the current surface and shadows replaced ranges", () => {
+  const events = [
+    searchEvent(0, "user/message", { content: [{ type: "text", text: "a" }] }),
+    searchEvent(1, "user/message", { content: [{ type: "text", text: "b" }] }),
+    searchEvent(
+      2,
+      "user/message",
+      {
+        content: [{ type: "text", text: "replacement" }],
+        sourceEventSeqs: [0, 1],
+      },
+      { start: 0, end: 1 },
+    ),
+  ];
+  const current = currentSurfaceSeqs(events);
+  assert.deepEqual([...current], [2]);
+});
+
+test("projects the complete log into per-Turn search items", () => {
+  const { items, total } = buildTurnSearchIndex(searchFixture(), "ｍｉｃｒｏ");
+  assert.equal(total, 2);
+  assert.deepEqual(
+    items.map(({ turn, seq, status }) => ({ turn, seq, status })),
+    [{ turn: 2, seq: 5, status: "failed" }],
+  );
+  assert.equal(items[0].summary, "Search MICRO sign");
+  assert.equal(items[0].answer, "全角 ｍｉｃｒｏ 也匹配。");
+  assert.match(items[0].source, /MICRO/);
+  assert.ok(
+    normalizeSearchText(items[0].source).includes(
+      normalizeSearchText("ｍｉｃｒｏ"),
+    ),
+  );
+  assert.ok(
+    !items[0].source.includes("grep"),
+    "tool-call text is not part of the chat index corpus",
+  );
+});
+
+test("builds the lite index for every Turn without context and marks open turns", () => {
+  const events = [
+    ...searchFixture(),
+    searchEvent(10, "turn/start", { turn: 3 }),
+    searchEvent(11, "user/message", {
+      source: { kind: "user" },
+      content: [{ type: "text", text: "still open" }],
+    }),
+  ];
+  const { items, total } = buildTurnIndex(events);
+  assert.equal(total, 3);
+  assert.deepEqual(
+    items.map(({ turn, status }) => ({ turn, status })),
+    [
+      { turn: 1, status: "completed" },
+      { turn: 2, status: "failed" },
+      { turn: 3, status: "unknown" },
+    ],
+  );
+  assert.equal(items[0].summary, "修复分页");
+  assert.equal(items[2].summary, "still open");
+  assert.ok(items.every((item) => item.source === ""));
+  assert.ok(
+    items.every((item) => item.seq === void 0 || typeof item.seq === "number"),
+  );
+});
+
+test("structural turn boundaries need no surface marker", () => {
+  const events = [
+    { seq: 0, type: "turn/start", time: 1, data: { turn: 1 } },
+    {
+      seq: 1,
+      type: "user/message",
+      time: 2,
+      data: {
+        source: { kind: "user" },
+        content: [{ type: "text", text: "hi" }],
+      },
+      surfaceOp: "append",
+    },
+    // Real logs carry no surfaceOp on turn/end; the projection must still
+    // mark the turn closed (and failed on an error reason).
+    {
+      seq: 2,
+      type: "turn/end",
+      time: 3,
+      data: { turn: 1, reason: { kind: "completed" } },
+    },
+    { seq: 3, type: "turn/start", time: 4, data: { turn: 2 } },
+    {
+      seq: 4,
+      type: "user/message",
+      time: 5,
+      data: {
+        source: { kind: "user" },
+        content: [{ type: "text", text: "again" }],
+      },
+      surfaceOp: "append",
+    },
+    {
+      seq: 5,
+      type: "turn/end",
+      time: 6,
+      data: { turn: 2, reason: { kind: "error", error: { message: "boom" } } },
+    },
+  ];
+  const { items } = buildTurnIndex(events);
+  assert.deepEqual(
+    items.map(({ turn, status }) => ({ turn, status })),
+    [
+      { turn: 1, status: "completed" },
+      { turn: 2, status: "failed" },
+    ],
+  );
+});
+
+test("full-log search skips injected context and non-matching turns", () => {
+  const events = [
+    searchEvent(0, "turn/start", { turn: 1 }),
+    searchEvent(1, "user/message", {
+      source: { kind: "plugin", plugin: "compact" },
+      content: [{ type: "text", text: "MICRO in context" }],
+    }),
+    searchEvent(2, "user/message", {
+      source: { kind: "user" },
+      content: [{ type: "text", text: "unrelated prompt" }],
+    }),
+    searchEvent(3, "turn/end", { turn: 1, reason: { kind: "completed" } }),
+  ];
+  const { items, total } = buildTurnSearchIndex(events, "MICRO");
+  assert.equal(total, 1);
+  assert.equal(items.length, 0, "injected context must not match");
+});
+
+test("windows long sources around the match", () => {
+  const source = `${"a".repeat(500)} needle ${"b".repeat(500)}`;
+  const windowed = searchWindowedSource(source, "needle");
+  assert.ok(windowed.startsWith("…"));
+  assert.ok(windowed.endsWith("…"));
+  assert.match(windowed, /needle/);
+  assert.ok(windowed.length < source.length);
+  assert.equal(
+    searchWindowedSource("short needle text", "needle"),
+    "short needle text",
+  );
 });

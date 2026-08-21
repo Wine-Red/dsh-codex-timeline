@@ -38,16 +38,9 @@ test("ships as an additive public DSH bundle", () => {
   );
 });
 
-test("declares the narrow verified rc.7-rc.8 compatibility window", () => {
-  assert.equal(compatibility.dsh.version, "0.1.0-rc.8");
-  assert.deepEqual(compatibility.dsh.verifiedVersions, [
-    "0.1.0-rc.7",
-    "0.1.0-rc.8",
-  ]);
-  assert.equal(
-    compatibility.dsh.rc7Commit,
-    "99f6f02fecdb7dff40c3fbc9470f5907c29f74ca",
-  );
+test("declares the verified 0.1.1-rc.2 compatibility window", () => {
+  assert.equal(compatibility.dsh.version, "0.1.1-rc.2");
+  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.1-rc.2"]);
   assert.equal(
     compatibility.officialConversation.package,
     "@deepseek-ai/dsh-client-ui-conversation",
@@ -60,19 +53,19 @@ test("declares the narrow verified rc.7-rc.8 compatibility window", () => {
   );
   for (const [name, version] of Object.entries(manifest.peerDependencies)) {
     if (name.startsWith("@deepseek-ai/dsh-"))
-      assert.equal(version, ">=0.1.0-rc.7 <0.1.0-rc.9", name);
+      assert.equal(version, "^0.1.1-rc.2", name);
   }
   assert.equal(
     manifest.dependencies["@deepseek-ai/dsh-settings"],
-    "0.1.0-rc.7",
-    "the bundled Host settings ABI stays on the backward-compatible baseline",
+    "0.1.1-rc.2",
+    "the bundled Host settings ABI matches the verified runtime",
   );
 });
 
-test("installer accepts only the two verified DSH versions", () => {
+test("installer accepts only the verified DSH version", () => {
   assert.match(
     installer,
-    /\$supportedVersions\s*=\s*@\(['"]0\.1\.0-rc\.7['"], ['"]0\.1\.0-rc\.8['"]\)/u,
+    /\$supportedVersions\s*=\s*@\(['"]0\.1\.1-rc\.2['"]\)/u,
   );
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });
@@ -89,11 +82,11 @@ test("keeps the original 0.3.2 style corpus byte-for-byte", () => {
   );
 });
 
-test("bridges rc.8 message images without removing the rc.7 component path", () => {
+test("bridges message images without replacing the component path", () => {
   assert.match(client, /LegacyImageGallery/u);
   assert.match(client, /renderSlot\("conversation\.message\.images"/u);
   assert.equal(
-    compatibility.adapter.rc8MessageImagesSlot,
+    compatibility.adapter.messageImagesSlot,
     "conversation.message.images",
   );
 });

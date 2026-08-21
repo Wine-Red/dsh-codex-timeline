@@ -73,7 +73,7 @@ for (const required of [
   "timeline.ttft",
   "tokensPerSecond",
   "prefers-reduced-motion",
-  "items.length < 3 && !hasMore",
+  "located.length === 0 && !hasMore",
   "settings.leftOffset",
   "--turn-nav-spacing",
   "--turn-nav-center",
@@ -84,12 +84,56 @@ for (const required of [
   "react_dom.createPortal",
   "disabled after startup failure",
   "function safeSlotInject",
+  // full-session search bridge (0.4.0)
+  '"/codex-timeline/search"',
+  "function fetchRemoteSearch",
+  "function remoteItemFromHit",
+  "const [remoteSearch, setRemoteSearch]",
+  '"timeline.search.countRemote"',
+  "allItems.find((candidate) => candidate.id === pendingJumpId)",
+  "timeline.search.hint",
+  // full-session index feed + rail (0.4.0)
+  "function fetchRemoteIndex",
+  "const [remoteIndex, setRemoteIndex]",
+  '"timeline.earlierCount"',
+  "unloaded: false",
+  "const railGap",
+  "const railStartOffset",
+  "preferences.recentTurns ?? 25",
+  "settings.recentTurns",
+  "timeLabelSameDay",
+  "remoteIndexCache",
+  "const allItems = indexItems",
+  "jumpMeasureTick",
+  "jumpStage",
+  '"timeline.jump.paging"',
+  ".dsh-tl-jumpStatus",
+  'kind === "user" || kind === "steering"',
+  "jumpPagesRef",
 ]) {
   if (!client.includes(required)) fail(`client is missing ${required}`);
+}
+for (const dropped of [
+  "const [indexOpen, setIndexOpen]",
+  '"timeline.index.open"',
+  ".dsh-tl-indexBadge",
+  '"timeline.index.heading"',
+  ".dsh-tl-unloadedMark",
+  "dsh-tl-unloadedSlot",
+]) {
+  if (client.includes(dropped))
+    fail(`client still contains removed panel marker ${dropped}`);
+}
+if (
+  client.includes("overflow-y:auto;justify-content:flex-start") ||
+  client.includes(".RhpIHW_track{overflow-y:auto")
+) {
+  fail("track scroll override clips the hover tooltip");
 }
 for (const forbidden of [
   "MutationObserver",
   "monkey patch",
+  "items.length < 3 && !hasMore",
   "E:\\Program",
   "C:\\Users",
 ]) {
@@ -107,6 +151,23 @@ if (!host.includes('TIMELINE_SETTINGS_NAMESPACE = "dsh-codex-timeline"')) {
 }
 if (!host.includes('path: "/codex-timeline"')) {
   fail("host timeline settings route is missing");
+}
+if (
+  !host.includes('"/codex-timeline/search"') ||
+  !host.includes("function searchRouteHandler") ||
+  !host.includes("function buildTurnSearchIndex") ||
+  !host.includes("function buildTurnIndex") ||
+  !host.includes('url.searchParams.get("lite") === "1"') ||
+  !host.includes('["sessionQuery"]') ||
+  !host.includes(".readSession(") ||
+  !host.includes('["sessions"]') ||
+  !host.includes("function cachedLiteIndex") ||
+  !host.includes("live.events") ||
+  !host.includes('["sessionPersistence"]') ||
+  !host.includes(".readRaw(") ||
+  !host.includes("raw.content")
+) {
+  fail("host full-session search route is missing");
 }
 if (
   !host.includes("function safeHostInject") ||

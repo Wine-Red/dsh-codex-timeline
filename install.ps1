@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$supportedVersions = @('0.1.0-rc.7', '0.1.0-rc.8')
+$supportedVersions = @('0.1.1-rc.2')
 $dshCommand = Get-Command dsh -ErrorAction Stop
 $actualVersion = (& $dshCommand.Source --version).Trim()
 

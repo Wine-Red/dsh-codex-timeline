@@ -50,6 +50,242 @@ function turnStatus(turn, waiting, running) {
   return "unknown";
 }
 
+// ── full-session search (host route projection) ────────────────────────────
+//
+// The search route reads the session's COMPLETE persisted log through the
+// sessionQuery service and projects it into the same per-Turn index shape the
+// browser builds from the loaded chat window. Keeping the projection here makes
+// the contract testable without a live host; lib/index.js carries the same
+// functions inline because the published package ships lib/ only.
+
+function blockText(block) {
+  switch (block?.type) {
+    case "text":
+      return block.text ?? "";
+    case "reasoning":
+      return "";
+    case "tool-call":
+      return joinSearchParts([block.name ?? "", block.arguments ?? ""]);
+    case "tool-result":
+      return (block.content ?? []).map(blockText).join("\n");
+    default:
+      return "";
+  }
+}
+
+function joinSearchParts(parts) {
+  return parts
+    .map((part) => String(part ?? "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+/** Semantic text of one session event (mirrors dsh-session-query extraction). */
+export function extractEventSearchText(event) {
+  switch (event?.type) {
+    case "user/message":
+      return (event.data?.content ?? []).map(blockText).join("\n");
+    case "assistant/message":
+      return (event.data?.message?.content ?? []).map(blockText).join("\n");
+    case "tool/call":
+      return joinSearchParts([event.data?.name, event.data?.arguments]);
+    case "tool/result":
+      return joinSearchParts([
+        (event.data?.message?.content ?? []).map(blockText).join("\n"),
+        event.data?.error?.name ?? "",
+        event.data?.error?.code ?? "",
+      ]);
+    case "todo/write":
+      return joinSearchParts(
+        (event.data?.todos ?? []).flatMap((todo) => [
+          todo.status,
+          todo.content,
+        ]),
+      );
+    case "turn/end":
+      return turnEndSearchText(event.data?.reason);
+    default:
+      return "";
+  }
+}
+
+function turnEndSearchText(reason) {
+  switch (reason?.kind) {
+    case "error":
+      return joinSearchParts(["error", reason.error?.message]);
+    case "aborted":
+      return "aborted";
+    case "max-tokens":
+    case "interrupted":
+      return reason.kind;
+    case "completed":
+      return "";
+    default:
+      return "";
+  }
+}
+
+/**
+ * Fold the log's current surface sequences (shadowed/replaced events are the
+ * model-only copy and cannot be jumped to from the transcript).
+ * @param events - complete contiguous event log.
+ * @returns Set of seqs currently on the surface.
+ */
+export function currentSurfaceSeqs(events) {
+  const nodes = [];
+  for (const event of events) {
+    const op = event?.surfaceOp;
+    if (op === undefined) continue;
+    if (op === "append") {
+      nodes.push(event.seq);
+      continue;
+    }
+    const startIdx = nodes.indexOf(op.start);
+    const endIdx = nodes.indexOf(op.end);
+    if (startIdx >= 0 && endIdx >= startIdx) {
+      nodes.splice(startIdx, endIdx - startIdx + 1, event.seq);
+    }
+  }
+  return new Set(nodes);
+}
+
+/** One bounded, match-centered source window for the search snippet renderer. */
+export function searchWindowedSource(source, query, radius = 300) {
+  const display = source.replace(/\s+/gu, " ").trim();
+  const normalized = normalizeSearchText(display);
+  const index = normalized.indexOf(normalizeSearchText(query));
+  if (index < 0) return display.slice(0, 640);
+  const start = Math.max(0, index - radius);
+  const end = Math.min(
+    display.length,
+    index + normalizeSearchText(query).length + radius,
+  );
+  return `${start > 0 ? "…" : ""}${display.slice(start, end)}${
+    end < display.length ? "…" : ""
+  }`;
+}
+
+/** Text-only blocks of an LLM-shaped content array (matches the chat index). */
+function contentTextBlocks(content) {
+  return (content ?? [])
+    .filter((block) => block?.type === "text")
+    .map((block) => block.text ?? "")
+    .join("\n");
+}
+
+/** One per-Turn record projected from the complete log (shared by both modes). */
+function projectTurns(events) {
+  const current = currentSurfaceSeqs(events);
+  const turns = new Map();
+  let currentTurn = undefined;
+  for (const event of events) {
+    if (event?.type === "turn/start") currentTurn = event.data?.turn;
+    // Turn boundaries are structural: they carry no surfaceOp, so they must be
+    // processed OUTSIDE the surface gate (user/assistant/tool events are).
+    if (event?.type === "turn/end") {
+      const entry = turns.get(event.data?.turn ?? currentTurn);
+      if (entry !== undefined) {
+        entry.closed = true;
+        if (event.data?.reason?.kind === "error") entry.failed = true;
+      }
+      continue;
+    }
+    const turn = currentTurn;
+    if (turn === undefined || !current.has(event.seq)) continue;
+    let entry = turns.get(turn);
+    if (entry === undefined) {
+      entry = {
+        turn,
+        user: [],
+        assistants: [],
+        failed: false,
+        closed: false,
+        seq: undefined,
+      };
+      turns.set(turn, entry);
+    }
+    if (event.type === "user/message") {
+      if (event.data?.source?.kind !== "user") continue;
+      const text = contentTextBlocks(event.data?.content).trim();
+      if (text === "") continue;
+      if (entry.user.length === 0) {
+        entry.time = event.time;
+        entry.seq = event.seq;
+      }
+      entry.user.push(text);
+    } else if (event.type === "assistant/message") {
+      const text = contentTextBlocks(event.data?.message?.content).trim();
+      if (text !== "") entry.assistants.push(text);
+    }
+  }
+  return [...turns.values()].sort((a, b) => a.turn - b.turn);
+}
+
+/** The browser-side status vocabulary for one projected Turn. */
+function turnSearchStatus(entry) {
+  return entry.failed ? "failed" : entry.closed ? "completed" : "unknown";
+}
+
+/** The log's maximum Turn number, matching the browser index's item total. */
+function maxTurnOf(entries) {
+  return entries.reduce((max, entry) => Math.max(max, entry.turn), 0);
+}
+
+function turnSearchItem(entry) {
+  return {
+    turn: entry.turn,
+    seq: entry.seq,
+    time: entry.time,
+    status: turnSearchStatus(entry),
+    summary: twoLineSummary(entry.user.join("\n")),
+    answer:
+      entry.assistants.length === 0
+        ? ""
+        : twoLineSummary(entry.assistants.join("\n")),
+  };
+}
+
+/**
+ * Lite full-session index: one item per Turn (summary, answer, status) WITHOUT
+ * the matched context source. The rail uses it to show every Turn of the
+ * session while the transcript window stays truncated.
+ * @param events - complete contiguous event log (seq order).
+ * @returns every Turn item in turn order plus the log's total turn count.
+ */
+export function buildTurnIndex(events) {
+  const entries = projectTurns(events);
+  const items = [];
+  for (const entry of entries) {
+    if (entry.user.length === 0) continue;
+    items.push({ ...turnSearchItem(entry), source: "" });
+  }
+  return { items, total: maxTurnOf(entries) };
+}
+
+/**
+ * Project the complete log into per-Turn search items, matching the browser
+ * index corpus exactly: real user prompts plus assistant text blocks, current
+ * surface only, one item per Turn that has a user-authored message.
+ * @param events - complete contiguous event log (seq order).
+ * @param query - literal search text.
+ * @returns matched items in turn order plus the log's total turn count.
+ */
+export function buildTurnSearchIndex(events, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  const entries = projectTurns(events);
+  const items = [];
+  for (const entry of entries) {
+    if (entry.user.length === 0) continue;
+    const source = [...entry.user, ...entry.assistants].join("\n");
+    if (!normalizeSearchText(source).includes(normalizedQuery)) continue;
+    items.push({
+      ...turnSearchItem(entry),
+      source: searchWindowedSource(source, query),
+    });
+  }
+  return { items, total: maxTurnOf(entries) };
+}
+
 /** Build exactly one item for each loaded Turn containing a real user node. */
 export function buildTurnNavigationIndex(chat, pending, running) {
   const latestOpen = [...chat.timeline.turnOrder]
@@ -62,10 +298,16 @@ export function buildTurnNavigationIndex(chat, pending, running) {
     const turn = chat.timeline.turns.get(turnNumber);
     if (turn === undefined) continue;
     const keys = chat.locations.getTurn(turnNumber);
-    const anchorKey = keys.find((key) => chat.nodes.get(key)?.kind === "user");
+    // Steering messages (sent while the agent is working) become
+    // kind="steering" nodes; index them too so every Turn of the session
+    // index has a jumpable anchor.
+    const anchorKey = keys.find((key) => {
+      const kind = chat.nodes.get(key)?.kind;
+      return kind === "user" || kind === "steering";
+    });
     if (anchorKey === undefined) continue;
     const user = chat.nodes.get(anchorKey);
-    if (user?.kind !== "user") continue;
+    if (user?.kind !== "user" && user?.kind !== "steering") continue;
 
     const nodes = keys.map((key) => chat.nodes.get(key));
     const assistants = nodes.filter((node) => node?.kind === "assistant-step");

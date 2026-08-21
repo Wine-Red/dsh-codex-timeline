@@ -45,21 +45,11 @@ The feature illustration summarizes the real interaction: hovering reveals Turn 
 
 1. Scroll the transcript and let the rail track the current Turn.
 2. Hover for two prompt lines and two answer lines; click or press Enter / Space to jump.
-3. Enable “Automatically load full history” to call DSH's existing history pager every 80 ms until every older Turn is materialized.
+3. The rail lists the RECENT N Turns (default 25, adjustable under Settings → Plugins → Plugin configuration); older Turns are reached via “Load earlier” or by raising the count.
 
 ## Compatibility
 
-This release supports only the following verified combinations. It intentionally declares no broader compatibility range:
-
-- Verified DSH: `0.1.0-rc.7`, `0.1.0-rc.8`
-- Verified rc.7 commit: `99f6f02fecdb7dff40c3fbc9470f5907c29f74ca`
-- Node.js: `^22.19.0 || >=24.0.0`
-
-The plugin no longer disables or replaces the official `ui-conversation`. DSH rc.7/rc.8 do not yet expose a dedicated Chat navigation slot, so the plugin uses the additive `conversation.session.header.actions` lifecycle seat and the stable `data-chat-flow` / `data-chat-anchor-key` DOM contracts shared by both versions to mount the original 0.3.2 timeline at the Chat root. The rc.8 image adaptation also leaves Conversation ownership untouched.
-
-Adapter, Host, settings, or slot registration failures disable and log only the timeline. DSH continues to own and render the session list, conversation body, and composer.
-
-Do not force-install this release on another DSH version. Remove it before upgrading DSH and repeat the contract audit described below.
+Compatible up to the current verified DSH version (`0.1.1-rc.2`). Do not force-install this release on another DSH version; remove it before upgrading DSH. Node.js `^22.19.0 || >=24.0.0`.
 
 ## Install
 
@@ -119,17 +109,17 @@ Restart DSH Web to return to the built-in Conversation UI.
 - Expands nearby short bars into a stepped shape on hover and temporarily follows the pointer; leaving restores the viewport highlight.
 - Shows item x/y, time, status, two prompt lines, two model-answer lines, and real Turn duration, TTFT, and tok/s when available.
 - Supports click, Enter, Space, arrow keys, Home, End, `focus-visible`, and `prefers-reduced-motion`.
-- Reuses the official DSH history loader behind a compact top ellipsis; stable node IDs preserve the reader anchor after a prepend.
-- “Automatically load full history” repeatedly calls DSH's native history pager at 80 ms intervals until the complete old transcript is rendered in Chat.
-- Searches available Turn previews and materialized transcript text locally, showing highlighted keyword context. Search data is never sent to the model or telemetry.
-- Hides automatically below three user messages, unless earlier history still exists.
+- Reuses the official DSH history loader behind a compact top ellipsis; stable node IDs preserve the reader anchor after a prepend, and the control shows how many old turns remain.
+- The left rail shows the RECENT N Turns of the session (default 25, adjustable 5–50 under Settings → Plugins → Plugin configuration) without materializing any content: spacing follows your own “marker spacing” setting and every marker looks the same as before. Loaded Turns highlight the current reading position; unloaded Turns — from the Host `lite=1` index — hover to the same two-line summary and chain-load and jump on click. Older Turns stay reachable through “Load earlier”.
+- Searches materialized transcript text locally and the complete persisted session log through the same-origin Host route `/codex-timeline/search`, merging both result sets with highlighted keyword context. An unloaded hit chain-loads the official history pages and jumps there. Deployments without a `sessionQuery` service degrade to loaded-content-only search.
+- Shows the timeline even for one or two user messages (it hides only when nothing is loaded and no earlier history exists), so navigation and search work from the first message.
 - Collapses on narrow screens without covering the composer or reducing message readability.
-- The settings page (Settings → Plugins → Plugin configuration) offers an enable toggle, “Automatically load full history,” and three position/spacing sliders; every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
+- The settings page (Settings → Plugins → Plugin configuration) offers an enable toggle and four sliders (left offset, center offset, marker spacing, turns shown); every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
 - The top-left ⋮ / search controls stay anchored; the position sliders move only the marker column.
 
 ## Privacy
 
-Prompt summaries, answer previews, search indexes, and hover/focus state are computed from the official Chat snapshot in the current browser. The plugin adds no model context, network request, or telemetry event.
+Prompt summaries, answer previews, and hover/focus state are computed from the official Chat snapshot in the current browser. Full-history search reads the persisted session log through the same-origin Host route `/codex-timeline/search`, which returns only the matching Turns' summaries and a bounded context window; nothing is sent to the model, telemetry, or any third party.
 
 ## Development and validation
 
