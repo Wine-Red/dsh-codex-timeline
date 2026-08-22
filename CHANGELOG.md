@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 - 2026-08-21
+
+- Remove the diagnostic jump-status chip from the rail (the loading/locating/landed/failed status text shown while jumping to an unloaded Turn). The jump logic itself is unchanged: paging stops at the target, anchor measurement is retried a bounded number of times, jumps give up after 30 pages, and status remains available in the browser console.
+
 ## 0.4.0 - 2026-08-21
 
 - Adapt the verified window to DSH `0.1.1-rc.2` (verify declarations, peer ranges, installer, settings ABI).

@@ -105,11 +105,8 @@ for (const required of [
   "remoteIndexCache",
   "const allItems = indexItems",
   "jumpMeasureTick",
-  "jumpStage",
-  '"timeline.jump.paging"',
-  ".dsh-tl-jumpStatus",
-  'kind === "user" || kind === "steering"',
   "jumpPagesRef",
+  'kind === "user" || kind === "steering"',
 ]) {
   if (!client.includes(required)) fail(`client is missing ${required}`);
 }
@@ -120,6 +117,11 @@ for (const dropped of [
   '"timeline.index.heading"',
   ".dsh-tl-unloadedMark",
   "dsh-tl-unloadedSlot",
+  // removed diagnostic jump-status chip (0.5.0 cut)
+  '"timeline.jump.paging"',
+  ".dsh-tl-jumpStatus",
+  "const [jumpStage, setJumpStage]",
+  "function jumpStatusText",
 ]) {
   if (client.includes(dropped))
     fail(`client still contains removed panel marker ${dropped}`);
