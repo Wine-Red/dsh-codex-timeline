@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add the persisted **Show on right** setting requested in [#4](https://github.com/Wine-Red/dsh-codex-timeline/issues/4), while keeping left as the backward-compatible default. Right-side mode mirrors the rail, stepped markers, tooltip corridor, search panel, controls, and narrow-screen trigger toward the transcript; its edge offset keeps the DSH scrollbar and native details resize boundary operable instead of covering the Host panel. The 24px tooltip corridor now becomes interactive only after a real marker is disclosed or focused, removing the always-on hover strip beside DSH Read/Edit rows without making the tooltip actions harder to reach.
+- Turn the recent-N desktop rail into a fixed, ID-anchored window over the complete session index. Hover or keyboard focus reveals up to two complete, visually graded markers outside each scrollable edge. Each coarse mouse-wheel event moves one Turn with a 170 ms directional slide; rapid bursts use an interruptible 110 ms transition that retargets from the current intermediate frame, fine trackpad deltas are accumulated and rate-limited, and reduced-motion mode switches immediately. While the pointer stays still, the expanded marker and tooltip now switch to the new physical slot in the same wheel update instead of waiting for native hover hit-testing. Filtering to only unloaded favorites preserves the measured viewport and centers short rails instead of collapsing their height to zero. The rail keeps its absolute position and marker count, releases scrolling to the transcript at either boundary, and preserves browser zoom, horizontal gestures, search-result scrolling, and tooltip interaction.
+- Extend Arrow/Home/End navigation across unloaded window boundaries, add Page Up / Page Down movement, preserve a valid roving tab stop, and keep keyboard focus on-screen when the wheel moves a focused marker out of view.
+- Stop truncating the lightweight full-session index at 500 Turns so every timeline marker remains reachable; the client still renders only the configured 5–50 interactive markers plus at most two decorative previews per edge.
+
 ## 0.4.1 - 2026-08-21
 
 - Remove the diagnostic jump-status chip from the rail (the loading/locating/landed/failed status text shown while jumping to an unloaded Turn). The jump logic itself is unchanged: paging stops at the target, anchor measurement is retried a bounded number of times, jumps give up after 30 pages, and status remains available in the browser console.

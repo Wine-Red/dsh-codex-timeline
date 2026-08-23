@@ -2,6 +2,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { Script, runInNewContext } from "node:vm";
+import {
+  accumulateRailWheel as sourceAccumulateRailWheel,
+  classifyRailMotion as sourceClassifyRailMotion,
+  deriveRailBand as sourceDeriveRailBand,
+  deriveRailGeometry as sourceDeriveRailGeometry,
+  deriveRailWindow as sourceDeriveRailWindow,
+  railSlotAtPointer as sourceRailSlotAtPointer,
+  railWindowStartForIndex as sourceRailWindowStartForIndex,
+  resolveRailWheel as sourceResolveRailWheel,
+  shouldRenderRailSurface as sourceShouldRenderRailSurface,
+  stepRailWindow as sourceStepRailWindow,
+} from "../src/navigation-model.mjs";
 
 const client = await readFile(
   new URL("../lib/client.js", import.meta.url),
@@ -47,6 +59,19 @@ function universalModuleStub() {
   });
   return proxy;
 }
+
+function bundledRailModel() {
+  const start = client.indexOf("\t\tconst RAIL_WINDOW_DEFAULT");
+  const end = client.indexOf("\t\tfunction positionLabel", start);
+  assert.ok(start >= 0 && end > start, "bundled rail helpers are extractable");
+  const block = client.slice(start, end);
+  return runInNewContext(`(() => {
+${block}
+return { accumulateRailWheel, classifyRailMotion, deriveRailBand, deriveRailGeometry, deriveRailWindow, railSlotAtPointer, railWindowStartForIndex, resolveRailWheel, shouldRenderRailSurface, stepRailWindow };
+})()`);
+}
+
+const plain = (value) => JSON.parse(JSON.stringify(value));
 
 test("ships a syntactically valid client bundle", () => {
   assert.doesNotThrow(() => new Script(client, { filename: "lib/client.js" }));
@@ -123,6 +148,25 @@ test("uses observer-backed geometry and cleans up scheduled work", () => {
   assert.doesNotMatch(client, /MutationObserver/u);
 });
 
+test("keeps viewport geometry when a filter has no materialized anchors", () => {
+  for (const value of [
+    "const keepViewportRef = (0, react.useRef)(false)",
+    "trackedKeys.current.size === 0 && !keepViewportRef.current",
+    "trackAnchors: (0, react.useCallback)((keys, keepViewport = false)",
+    "keepViewportRef.current = keepViewport",
+    "if (keepViewport) scheduleMeasure(true)",
+    "const shouldRenderRail = shouldRenderRailSurface(preferences.enabled, favoritesOnly, located.length, hasMore)",
+    "trackAnchors([], false)",
+    "if (!shouldRenderRail) return null",
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+  assert.match(
+    client,
+    /trackAnchors\(shouldRenderRail \? visibleItems\.flatMap[\s\S]*?, shouldRenderRail\)/u,
+  );
+});
+
 test("keeps paging, keyboard, reduced-motion, search, and settings contracts", () => {
   for (const value of [
     "loadOlderAnchored",
@@ -132,7 +176,7 @@ test("keeps paging, keyboard, reduced-motion, search, and settings contracts", (
     "prefers-reduced-motion:reduce",
     "timeline.search.noneEarlier",
     "settings.followHighlight",
-    "located.length === 0 && !hasMore",
+    "shouldRenderRailSurface",
   ]) {
     assert.ok(client.includes(value), value);
   }
@@ -158,10 +202,283 @@ test("removed auto-load-all and made the recent-turns count a setting", () => {
   assert.doesNotMatch(client, /codex-timeline\/history-index/u);
 });
 
+test("persists an opt-in right side and mirrors the complete interaction surface", () => {
+  for (const value of [
+    'const railSide = preferences.side === "right" ? "right" : "left"',
+    '"data-turn-nav-side": railSide',
+    'side: "left"',
+    'checked: settings.side === "right"',
+    'setPreference("side", value ? "right" : "left")',
+    'side: clean.side === "right" ? "right" : "left"',
+    "next.side === this.snapshot.side",
+    '"settings.showOnRight"',
+    '"settings.showOnRightHint"',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+
+  for (const value of [
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(var(--dsh-scrollbar-width, 8px),env(safe-area-inset-right, 0px))}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail{left:auto;right:calc(-4px + var(--turn-nav-right-safe-inset));pointer-events:none}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail>:is(.RhpIHW_railClose,.RhpIHW_earlier,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger,.RhpIHW_searchPanel,.RhpIHW_track){pointer-events:auto}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail .RhpIHW_track{left:auto;right:calc(var(--turn-nav-left, 0px) + 4px);width:38px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_marker{left:auto;right:0}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mark{left:auto;right:12px;transform-origin:right center}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"1\\"] .RhpIHW_railPeekMark{left:auto;right:13px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"2\\"] .RhpIHW_railPeekMark{left:auto;right:14px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_desktopTrigger{left:auto;right:var(--turn-nav-right-safe-inset)}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mobileTrigger{left:auto;right:max(8px,env(safe-area-inset-right, 0px))}',
+    '[data-details-collapsed] .RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(0px,env(safe-area-inset-right, 0px))}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_tooltip{left:auto;right:calc(100% + 24px)}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_markerSlot::after{left:auto;right:100%}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_earlier,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger){left:auto;right:7px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railClose{left:auto;right:28px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_searchPanel{left:auto;right:42px}',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+
+  assert.ok(client.includes(".RhpIHW_rail{left:-4px}"));
+  assert.doesNotMatch(client, /scaleX\(-1\)/u);
+});
+
+test("uses a fixed logical rail window with one-item wheel steps", () => {
+  for (const value of [
+    "function deriveRailWindow",
+    "function stepRailWindow",
+    "function railWindowStartForIndex",
+    "function accumulateRailWheel",
+    "function resolveRailWheel",
+    "const [railWindowAnchorId, setRailWindowAnchorId]",
+    'track.addEventListener("wheel", onRailWheel, { passive: false })',
+    "resolution.shouldPreventDefault",
+    "event.preventDefault()",
+    "target.closest(`.${TurnNavigation_module_css_default.tooltip}`)",
+    '"aria-description": t("timeline.scrollHint")',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+  assert.match(
+    client,
+    /ref: railTrackRef,\s+className: TurnNavigation_module_css_default\.track/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /className: TurnNavigation_module_css_default\.rail,\s+onWheel/u,
+  );
+  assert.doesNotMatch(client, /\.RhpIHW_track\{[^}]*overflow-y:auto/u);
+});
+
+test("published rail helpers match the behavior-tested source model", () => {
+  const bundled = bundledRailModel();
+  const entries = Array.from({ length: 60 }, (_, index) => ({
+    item: { id: `turn:${index + 1}` },
+  }));
+
+  for (const anchor of [null, "turn:1", "turn:22", "turn:missing"]) {
+    assert.deepEqual(
+      plain(bundled.deriveRailWindow(entries, 25, anchor)),
+      plain(sourceDeriveRailWindow(entries, 25, anchor)),
+    );
+  }
+  assert.deepEqual(
+    plain(
+      bundled.deriveRailBand(bundled.deriveRailWindow(entries, 25, "turn:22")),
+    ),
+    plain(sourceDeriveRailBand(sourceDeriveRailWindow(entries, 25, "turn:22"))),
+  );
+  for (const clientY of [99, 100, 114.999, 115, 474.999, 475]) {
+    assert.equal(
+      bundled.railSlotAtPointer(clientY, 100, 0, 15, 25),
+      sourceRailSlotAtPointer(clientY, 100, 0, 15, 25),
+    );
+  }
+  for (const args of [
+    [true, false, 1, false],
+    [true, true, 0, false],
+    [true, false, 0, true],
+    [true, false, 0, false],
+    [false, true, 1, true],
+  ]) {
+    assert.equal(
+      bundled.shouldRenderRailSurface(...args),
+      sourceShouldRenderRailSurface(...args),
+    );
+  }
+  for (const [previous, current] of [
+    [Number.NEGATIVE_INFINITY, 0],
+    [0, 119],
+    [0, 120],
+    [120, 100],
+  ]) {
+    assert.equal(
+      bundled.classifyRailMotion(previous, current),
+      sourceClassifyRailMotion(previous, current),
+    );
+  }
+  assert.deepEqual(
+    plain(bundled.deriveRailGeometry(360, 25, 15, 2)),
+    plain(sourceDeriveRailGeometry(360, 25, 15, 2)),
+  );
+  for (const direction of [-100, -1, 0, 1, 100]) {
+    assert.equal(
+      bundled.stepRailWindow(12, entries.length, 25, direction),
+      sourceStepRailWindow(12, entries.length, 25, direction),
+    );
+  }
+  for (const index of [0, 9, 10, 34, 35, 59]) {
+    assert.equal(
+      bundled.railWindowStartForIndex(10, index, entries.length, 25),
+      sourceRailWindowStartForIndex(10, index, entries.length, 25),
+    );
+  }
+
+  let sourceGesture;
+  let bundledGesture;
+  for (const input of [
+    { deltaY: 20, timeStamp: 0 },
+    { deltaY: 90, timeStamp: 16 },
+    { deltaY: 100, timeStamp: 24 },
+    { deltaX: 20, deltaY: 10, timeStamp: 32 },
+    { deltaY: -12, timeStamp: 48 },
+  ]) {
+    sourceGesture = sourceAccumulateRailWheel(sourceGesture, input);
+    bundledGesture = bundled.accumulateRailWheel(bundledGesture, input);
+    assert.deepEqual(plain(bundledGesture), plain(sourceGesture));
+  }
+
+  let sourceStart = 10;
+  let bundledStart = 10;
+  sourceGesture = undefined;
+  bundledGesture = undefined;
+  for (const input of [
+    { deltaY: 20, timeStamp: 0 },
+    { deltaX: 20, deltaY: 10, timeStamp: 10 },
+    { deltaY: 16, timeStamp: 20 },
+    { deltaY: 100, timeStamp: 200 },
+    { deltaY: -100, ctrlKey: true, timeStamp: 220 },
+  ]) {
+    const source = sourceResolveRailWheel(
+      sourceGesture,
+      input,
+      sourceStart,
+      entries.length,
+      25,
+    );
+    const emitted = bundled.resolveRailWheel(
+      bundledGesture,
+      input,
+      bundledStart,
+      entries.length,
+      25,
+    );
+    assert.deepEqual(plain(emitted), plain(source));
+    sourceGesture = source.gesture;
+    bundledGesture = emitted.gesture;
+    sourceStart = source.start;
+    bundledStart = emitted.start;
+  }
+});
+
+test("shows two complete graded edge markers and animates stable slots", () => {
+  for (const value of [
+    ".RhpIHW_railBandSlot{transition:transform .17s cubic-bezier(.22,.75,.18,1);will-change:transform}",
+    ".RhpIHW_railPreviewSlot{pointer-events:none;opacity:0;z-index:0;transition:transform .17s cubic-bezier(.22,.75,.18,1),opacity .09s ease-in}",
+    ".RhpIHW_track:hover .RhpIHW_railPreviewSlot,.RhpIHW_track:focus-within .RhpIHW_railPreviewSlot{opacity:1",
+    '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"1\\"] .RhpIHW_railPeekMark{width:7px;height:2px;left:13px;opacity:.42}',
+    '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"2\\"] .RhpIHW_railPeekMark{width:5px;height:2px;left:14px;opacity:.24}',
+    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railBandSlot{transition-duration:.11s;transition-timing-function:cubic-bezier(.16,.84,.24,1)}',
+    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railPreviewSlot{transition-property:transform,opacity;transition-duration:.11s,.09s',
+    ".RhpIHW_railPreviewSlot{transition-duration:.17s,.13s}.RhpIHW_track:hover .RhpIHW_railPreviewSlot,.RhpIHW_track:focus-within .RhpIHW_railPreviewSlot{transition-duration:.17s,.19s}",
+    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railPreviewSlot{transition-duration:.11s,.13s}',
+    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"]:hover .RhpIHW_railPreviewSlot,.RhpIHW_track[data-turn-nav-motion=\\"burst\\"]:focus-within .RhpIHW_railPreviewSlot{transition-duration:.11s,.19s}',
+    "@media (prefers-reduced-motion:reduce){.RhpIHW_railBandSlot,.RhpIHW_railPeekMark{transition:none}}",
+    'edge: "older"',
+    'edge: "newer"',
+    '"data-turn-nav-peek": edge',
+    '"data-turn-nav-peek-depth": depth',
+    "translate3d(0, ${relativeIndex * railGap}px, 0)",
+    '"data-turn-nav-motion": railMotionMode',
+    "classifyRailMotion(railLastMotionAtRef.current, motionAt)",
+    '"aria-hidden": true',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+  assert.doesNotMatch(client, /olderPeek\b|newerPeek\b/u);
+  assert.doesNotMatch(client, /railPeekLayer/u);
+  assert.doesNotMatch(
+    client,
+    /data-turn-nav-animate=false[^}]*transition:none/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /\.RhpIHW_railPeekMark\[data-turn-nav-peek-depth=/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /\[data-turn-nav-peek-depth=[12]\]/u,
+    "numeric CSS attribute values must stay quoted so browsers keep the rule",
+  );
+  assert.ok(client.includes("children: railBandItems.map"));
+  assert.match(client, /key: item\.id/u);
+  assert.match(
+    client,
+    /onMouseLeave: \(\) => \{\s+hoveredSlotRef\.current = null;\s+setHoveredId\(null\)/u,
+  );
+  for (const value of [
+    "onMouseEnter: syncRailHoverAtPointer",
+    "onMouseMove: syncRailHoverAtPointer",
+    "railSlotAtPointer(event.clientY, bounds.top, railStartOffset, railGap, railItems.length)",
+    "setHoveredId((current) => current === nextId ? current : nextId)",
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+  assert.doesNotMatch(
+    client,
+    /hoveredSlotRef\.current = index/u,
+    "moving keyed slots must not overwrite the fixed physical hover slot",
+  );
+  assert.ok(client.includes(".RhpIHW_marker{height:100%;min-height:0}"));
+  assert.ok(client.includes(".RhpIHW_markerSlot{min-height:0}"));
+  assert.ok(
+    client.lastIndexOf(".RhpIHW_markerSlot{min-height:0}") >
+      client.indexOf(".RhpIHW_markerSlot{position:relative;height:"),
+  );
+});
+
+test("keyboard navigation crosses rail windows without losing the tab stop", () => {
+  assert.match(
+    client,
+    /railItemsAll\.findIndex\(\(\{ item \}\) => item\.id === from\)/u,
+  );
+  assert.ok(client.includes('event.key === "PageUp"'));
+  assert.ok(client.includes('event.key === "PageDown"'));
+  assert.match(client, /tabIndex: railTabStopId === item\.id \? 0 : -1/u);
+  assert.match(
+    client,
+    /requestAnimationFrame\(\(\) => \{\s+buttonRefs\.current\.get\(next\.id\)\?\.focus\(\)/u,
+  );
+});
+
 test("keeps current and disclosed marker states visually distinct", () => {
   assert.ok(
     client.includes(
-      ".RhpIHW_markerSlot:hover .RhpIHW_mark,.RhpIHW_markerSlot:focus-within .RhpIHW_mark{width:39px",
+      ".RhpIHW_markerSlot[data-turn-nav-disclosed=true] .RhpIHW_mark{width:39px!important",
+    ),
+  );
+  assert.ok(
+    client.includes(
+      ".RhpIHW_markerSlot:has(+ .RhpIHW_markerSlot[data-turn-nav-disclosed=true]) .RhpIHW_mark",
+    ),
+  );
+  assert.ok(
+    client.includes(
+      ".RhpIHW_markerSlot .RhpIHW_mark{width:9px!important;background:var(--dsw-alias-label-tertiary);opacity:.32}",
+    ),
+  );
+  assert.ok(
+    client.includes(
+      ".RhpIHW_markerSlot .RhpIHW_mark{transition:opacity .08s,transform .12s}@media (prefers-reduced-motion:reduce){.RhpIHW_markerSlot .RhpIHW_mark{transition:none}}",
     ),
   );
   assert.ok(
@@ -183,6 +500,11 @@ test("leaves a bridged gap between an expanded marker and its tooltip", () => {
   assert.ok(
     client.includes(
       ".RhpIHW_tooltip{left:calc(100% + 24px)}.RhpIHW_markerSlot::after{width:24px}",
+    ),
+  );
+  assert.ok(
+    client.includes(
+      ".RhpIHW_markerSlot::after{pointer-events:none}.RhpIHW_markerSlot[data-turn-nav-disclosed=true]::after,.RhpIHW_markerSlot:focus-within::after{pointer-events:auto}",
     ),
   );
 });

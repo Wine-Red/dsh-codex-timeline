@@ -73,8 +73,21 @@ for (const required of [
   "timeline.ttft",
   "tokensPerSecond",
   "prefers-reduced-motion",
-  "located.length === 0 && !hasMore",
+  "shouldRenderRailSurface",
+  "trackedKeys.current.size === 0 && !keepViewportRef.current",
   "settings.leftOffset",
+  "settings.showOnRight",
+  'const railSide = preferences.side === "right" ? "right" : "left"',
+  '"data-turn-nav-side": railSide',
+  'setPreference("side", value ? "right" : "left")',
+  'side: clean.side === "right" ? "right" : "left"',
+  "next.side === this.snapshot.side",
+  "--turn-nav-right-safe-inset",
+  'data-turn-nav-side=\\"right\\"] .RhpIHW_tooltip{left:auto;right:calc(100% + 24px)',
+  'data-turn-nav-side=\\"right\\"] .RhpIHW_searchPanel{left:auto;right:42px}',
+  ".RhpIHW_markerSlot::after{pointer-events:none}",
+  ".RhpIHW_markerSlot[data-turn-nav-disclosed=true]::after",
+  "[data-details-collapsed]",
   "--turn-nav-spacing",
   "--turn-nav-center",
   "/codex-timeline/settings",
@@ -100,6 +113,26 @@ for (const required of [
   "const railGap",
   "const railStartOffset",
   "preferences.recentTurns ?? 25",
+  "function deriveRailWindow",
+  "function deriveRailBand",
+  "function deriveRailGeometry",
+  "function classifyRailMotion",
+  "function stepRailWindow",
+  "function railWindowStartForIndex",
+  "function accumulateRailWheel",
+  "function resolveRailWheel",
+  "resolution.shouldPreventDefault",
+  "const [railWindowAnchorId, setRailWindowAnchorId]",
+  'track.addEventListener("wheel", onRailWheel, { passive: false })',
+  'edge: "older"',
+  'edge: "newer"',
+  '"data-turn-nav-peek": edge',
+  '"data-turn-nav-peek-depth": depth',
+  "children: railBandItems.map",
+  "translate3d(0, ${relativeIndex * railGap}px, 0)",
+  '"data-turn-nav-motion": railMotionMode',
+  "classifyRailMotion(railLastMotionAtRef.current, motionAt)",
+  "railTabStopId === item.id",
   "settings.recentTurns",
   "timeLabelSameDay",
   "remoteIndexCache",
@@ -128,9 +161,11 @@ for (const dropped of [
 }
 if (
   client.includes("overflow-y:auto;justify-content:flex-start") ||
-  client.includes(".RhpIHW_track{overflow-y:auto")
+  client.includes(".RhpIHW_track{overflow-y:auto") ||
+  client.includes("railPeekLayer") ||
+  /\bolderPeek\b|\bnewerPeek\b/u.test(client)
 ) {
-  fail("track scroll override clips the hover tooltip");
+  fail("rail must use complete edge previews without clipping the tooltip");
 }
 for (const forbidden of [
   "MutationObserver",
@@ -151,6 +186,13 @@ if (`${clientTypes}\n${hostTypes}`.includes("rc.6 conversation")) {
 if (!host.includes('TIMELINE_SETTINGS_NAMESPACE = "dsh-codex-timeline"')) {
   fail("host timeline settings namespace is missing");
 }
+if (
+  !host.includes(
+    'side: z.union([z.const("left"), z.const("right")]).default("left")',
+  )
+) {
+  fail("host timeline side setting is missing or no longer defaults to left");
+}
 if (!host.includes('path: "/codex-timeline"')) {
   fail("host timeline settings route is missing");
 }
@@ -165,11 +207,15 @@ if (
   !host.includes('["sessions"]') ||
   !host.includes("function cachedLiteIndex") ||
   !host.includes("live.events") ||
+  !host.includes("jsonOk(res, { items, total })") ||
   !host.includes('["sessionPersistence"]') ||
   !host.includes(".readRaw(") ||
   !host.includes("raw.content")
 ) {
   fail("host full-session search route is missing");
+}
+if (host.includes("SEARCH_INDEX_MAX")) {
+  fail("lite full-session index must not truncate long timelines");
 }
 if (
   !host.includes("function safeHostInject") ||

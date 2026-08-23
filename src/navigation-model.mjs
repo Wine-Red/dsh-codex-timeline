@@ -32,6 +32,362 @@ export function searchSnippet(source, normalizedQuery) {
   };
 }
 
+const RAIL_WINDOW_DEFAULT = 25;
+const RAIL_EDGE_PREVIEW_COUNT = 2;
+const RAIL_WHEEL_PIXEL_THRESHOLD = 36;
+const RAIL_WHEEL_DISCRETE_THRESHOLD = 80;
+const RAIL_WHEEL_IDLE_RESET_MS = 160;
+const RAIL_WHEEL_STEP_COOLDOWN_MS = 48;
+const RAIL_MOTION_BURST_MS = 120;
+
+function railWindowLimit(value) {
+  return Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : RAIL_WINDOW_DEFAULT;
+}
+
+/**
+ * Project a fixed-size rail window. A null anchor follows the newest items;
+ * otherwise the anchored item stays at the window's leading edge while older
+ * history is prepended or a new Turn is appended.
+ */
+export function deriveRailWindow(
+  items,
+  visibleLimit = RAIL_WINDOW_DEFAULT,
+  anchorId = null,
+) {
+  const visibleCount = Math.min(items.length, railWindowLimit(visibleLimit));
+  const maxStart = Math.max(0, items.length - visibleCount);
+  const anchoredStart =
+    anchorId === null
+      ? maxStart
+      : items.findIndex(
+          (entry) => entry?.item?.id === anchorId || entry?.id === anchorId,
+        );
+  const start = Math.max(
+    0,
+    Math.min(maxStart, anchoredStart < 0 ? maxStart : anchoredStart),
+  );
+  const end = start + visibleCount;
+
+  return {
+    start,
+    end,
+    maxStart,
+    items: items.slice(start, end),
+    olderPeeks: items.slice(
+      Math.max(0, start - RAIL_EDGE_PREVIEW_COUNT),
+      start,
+    ),
+    newerPeeks: items.slice(
+      end,
+      Math.min(items.length, end + RAIL_EDGE_PREVIEW_COUNT),
+    ),
+    hasOlder: start > 0,
+    hasNewer: end < items.length,
+  };
+}
+
+/** Keep preview and interactive entries in one stable keyed motion band. */
+export function deriveRailBand(window) {
+  const olderPeeks = Array.isArray(window?.olderPeeks) ? window.olderPeeks : [];
+  const visible = Array.isArray(window?.items) ? window.items : [];
+  const newerPeeks = Array.isArray(window?.newerPeeks) ? window.newerPeeks : [];
+
+  return [
+    ...olderPeeks.map((entry, index) => ({
+      entry,
+      edge: "older",
+      depth: olderPeeks.length - index,
+      relativeIndex: index - olderPeeks.length,
+    })),
+    ...visible.map((entry, index) => ({
+      entry,
+      windowIndex: index,
+      relativeIndex: index,
+    })),
+    ...newerPeeks.map((entry, index) => ({
+      entry,
+      edge: "newer",
+      depth: index + 1,
+      relativeIndex: visible.length + index,
+    })),
+  ];
+}
+
+/**
+ * Keep the interactive window centered while reserving complete, symmetric
+ * slots for edge previews. The reservation is based on capacity rather than
+ * the current boundary so the rail never jumps as previews appear/disappear.
+ */
+export function deriveRailGeometry(
+  trackHeight,
+  visibleCount,
+  markerSpacing,
+  edgePreviewCount = RAIL_EDGE_PREVIEW_COUNT,
+) {
+  const height = Math.max(0, Number.isFinite(trackHeight) ? trackHeight : 0);
+  const count = Math.max(
+    0,
+    Number.isFinite(visibleCount) ? Math.floor(visibleCount) : 0,
+  );
+  const previews = Math.max(
+    0,
+    Number.isFinite(edgePreviewCount) ? Math.floor(edgePreviewCount) : 0,
+  );
+  const preferredGap = Math.max(
+    2,
+    Number.isFinite(markerSpacing) ? markerSpacing : 10,
+  );
+  const capacity = Math.max(1, count + previews * 2);
+  const gap = Math.max(2, Math.min(preferredGap, (height - 12) / capacity));
+  const groupHeight = count * gap;
+
+  return {
+    gap,
+    groupHeight,
+    startOffset: Math.max(0, (height - groupHeight) / 2),
+  };
+}
+
+/** Map a pointer coordinate to the fixed interactive slot beneath it. */
+export function railSlotAtPointer(
+  clientY,
+  trackTop,
+  startOffset,
+  gap,
+  visibleCount,
+) {
+  const count = Number.isFinite(visibleCount)
+    ? Math.max(0, Math.floor(visibleCount))
+    : 0;
+  if (
+    !Number.isFinite(clientY) ||
+    !Number.isFinite(trackTop) ||
+    !Number.isFinite(startOffset) ||
+    !Number.isFinite(gap) ||
+    gap <= 0 ||
+    count === 0
+  ) {
+    return null;
+  }
+
+  const localY = clientY - trackTop - startOffset;
+  if (localY < 0 || localY >= count * gap) return null;
+  return Math.min(count - 1, Math.floor(localY / gap));
+}
+
+/** Keep the rail surface measurable even when every visible item is unloaded. */
+export function shouldRenderRailSurface(
+  enabled,
+  favoritesOnly,
+  locatedCount,
+  hasMore,
+) {
+  return (
+    enabled === true &&
+    (favoritesOnly === true ||
+      (Number.isFinite(locatedCount) && locatedCount > 0) ||
+      hasMore === true)
+  );
+}
+
+/** Use a shorter interruptible transition for high-frequency wheel bursts. */
+export function classifyRailMotion(previousTime, currentTime) {
+  if (!Number.isFinite(previousTime) || !Number.isFinite(currentTime)) {
+    return "step";
+  }
+  const elapsed = currentTime - previousTime;
+  return elapsed < 0 || elapsed >= RAIL_MOTION_BURST_MS ? "step" : "burst";
+}
+
+/** Move a rail window by at most one item and clamp it at both boundaries. */
+export function stepRailWindow(start, itemCount, visibleLimit, direction) {
+  const visibleCount = Math.min(
+    Math.max(0, itemCount),
+    railWindowLimit(visibleLimit),
+  );
+  const maxStart = Math.max(0, itemCount - visibleCount);
+  const current = Number.isFinite(start) ? Math.trunc(start) : maxStart;
+  const step = Math.sign(Number.isFinite(direction) ? direction : 0);
+  return Math.max(0, Math.min(maxStart, current + step));
+}
+
+/** Keep a keyboard target inside the fixed rail window with minimal movement. */
+export function railWindowStartForIndex(
+  start,
+  itemIndex,
+  itemCount,
+  visibleLimit,
+) {
+  const visibleCount = Math.min(
+    Math.max(0, itemCount),
+    railWindowLimit(visibleLimit),
+  );
+  if (visibleCount === 0) return 0;
+  const maxStart = Math.max(0, itemCount - visibleCount);
+  const current = Math.max(
+    0,
+    Math.min(maxStart, Number.isFinite(start) ? Math.trunc(start) : maxStart),
+  );
+  const target = Math.max(
+    0,
+    Math.min(itemCount - 1, Number.isFinite(itemIndex) ? itemIndex : current),
+  );
+  if (target < current) return target;
+  if (target >= current + visibleCount) {
+    return Math.min(maxStart, target - visibleCount + 1);
+  }
+  return current;
+}
+
+/**
+ * Normalize coarse mouse-wheel notches and high-resolution trackpad deltas.
+ * Coarse events always yield one step. Fine pixel deltas accumulate to one
+ * step, reset after an idle pause or direction reversal, and are rate-limited
+ * so inertial trackpad events do not race through the rail.
+ */
+export function accumulateRailWheel(state, input) {
+  const previous = {
+    accumulated: Number.isFinite(state?.accumulated) ? state.accumulated : 0,
+    direction: Number.isFinite(state?.direction) ? state.direction : 0,
+    lastEventAt: Number.isFinite(state?.lastEventAt)
+      ? state.lastEventAt
+      : Number.NEGATIVE_INFINITY,
+    lastStepAt: Number.isFinite(state?.lastStepAt)
+      ? state.lastStepAt
+      : Number.NEGATIVE_INFINITY,
+    precision: state?.precision === true,
+  };
+  const deltaX = Number.isFinite(input?.deltaX) ? input.deltaX : 0;
+  const deltaY = Number.isFinite(input?.deltaY) ? input.deltaY : 0;
+  const deltaMode = Number.isFinite(input?.deltaMode) ? input.deltaMode : 0;
+  const timeStamp = Number.isFinite(input?.timeStamp)
+    ? input.timeStamp
+    : previous.lastEventAt;
+
+  if (deltaY === 0 || Math.abs(deltaX) >= Math.abs(deltaY)) {
+    return {
+      ...previous,
+      accumulated: 0,
+      direction: 0,
+      lastEventAt: timeStamp,
+      step: 0,
+    };
+  }
+
+  const direction = Math.sign(deltaY);
+  const elapsed = timeStamp - previous.lastEventAt;
+  const newGesture =
+    previous.direction === 0 ||
+    elapsed < 0 ||
+    elapsed > RAIL_WHEEL_IDLE_RESET_MS;
+  const reset = direction !== previous.direction || newGesture;
+  const precision =
+    deltaMode === 0 &&
+    (newGesture
+      ? Math.abs(deltaY) < RAIL_WHEEL_DISCRETE_THRESHOLD
+      : previous.precision);
+
+  if (
+    deltaMode !== 0 ||
+    (!precision && Math.abs(deltaY) >= RAIL_WHEEL_PIXEL_THRESHOLD)
+  ) {
+    return {
+      accumulated: 0,
+      direction,
+      lastEventAt: timeStamp,
+      lastStepAt: timeStamp,
+      precision: false,
+      step: direction,
+    };
+  }
+
+  const accumulated = (reset ? 0 : previous.accumulated) + Math.abs(deltaY);
+  const cooledDown =
+    timeStamp - previous.lastStepAt >= RAIL_WHEEL_STEP_COOLDOWN_MS;
+  if (accumulated < RAIL_WHEEL_PIXEL_THRESHOLD || !cooledDown) {
+    return {
+      ...previous,
+      accumulated,
+      direction,
+      lastEventAt: timeStamp,
+      precision,
+      step: 0,
+    };
+  }
+
+  return {
+    accumulated: 0,
+    direction,
+    lastEventAt: timeStamp,
+    lastStepAt: timeStamp,
+    precision,
+    step: direction,
+  };
+}
+
+function resetRailWheelGesture(state, timeStamp) {
+  return accumulateRailWheel(state, {
+    deltaX: 1,
+    deltaY: 0,
+    deltaMode: 0,
+    timeStamp,
+  });
+}
+
+/**
+ * Resolve one wheel event against the rail boundaries. The caller prevents the
+ * browser default only when `shouldPreventDefault` is true; ignored gestures
+ * and boundary events reset residual trackpad input and keep scroll chaining.
+ */
+export function resolveRailWheel(state, input, start, itemCount, visibleLimit) {
+  const current = stepRailWindow(start, itemCount, visibleLimit, 0);
+  const release = () => ({
+    gesture: resetRailWheelGesture(state, input?.timeStamp),
+    start: current,
+    step: 0,
+    moved: false,
+    shouldPreventDefault: false,
+  });
+
+  if (
+    input?.defaultPrevented === true ||
+    input?.ctrlKey === true ||
+    input?.metaKey === true ||
+    input?.shiftKey === true
+  ) {
+    return release();
+  }
+
+  const deltaX = Number.isFinite(input?.deltaX) ? input.deltaX : 0;
+  const deltaY = Number.isFinite(input?.deltaY) ? input.deltaY : 0;
+  if (deltaY === 0 || Math.abs(deltaX) >= Math.abs(deltaY)) return release();
+
+  const available = stepRailWindow(current, itemCount, visibleLimit, deltaY);
+  if (available === current) return release();
+
+  const gesture = accumulateRailWheel(state, input);
+  if (gesture.step === 0) {
+    return {
+      gesture,
+      start: current,
+      step: 0,
+      moved: false,
+      shouldPreventDefault: true,
+    };
+  }
+
+  const next = stepRailWindow(current, itemCount, visibleLimit, gesture.step);
+  return {
+    gesture,
+    start: next,
+    step: gesture.step,
+    moved: next !== current,
+    shouldPreventDefault: true,
+  };
+}
+
 function blocksText(blocks) {
   return blocks
     .filter((block) => block.kind === "text" || block.type === "text")

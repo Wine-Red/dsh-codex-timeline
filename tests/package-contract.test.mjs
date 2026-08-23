@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { apply } from "../lib/index.js";
 
 const manifest = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -19,6 +20,10 @@ const installer = await readFile(
 );
 const client = await readFile(
   new URL("../lib/client.js", import.meta.url),
+  "utf8",
+);
+const host = await readFile(
+  new URL("../lib/index.js", import.meta.url),
   "utf8",
 );
 
@@ -70,6 +75,35 @@ test("installer accepts only the verified DSH version", () => {
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });
 
+test("defaults timeline placement to left and validates the persisted side", () => {
+  let timelineSchema;
+  const errors = [];
+  apply({
+    logger: { error: (message) => errors.push(message) },
+    inject: (services, install) => {
+      if (services.length !== 1 || services[0] !== "settings") return;
+      install({
+        settings: {
+          register: (_namespace, schema) => {
+            timelineSchema = schema;
+          },
+          describe: () => [],
+          update: async () => undefined,
+        },
+      });
+    },
+    effect: (install) => install(),
+    webServer: { register: () => () => undefined },
+  });
+
+  assert.equal(typeof timelineSchema, "function");
+  assert.equal(timelineSchema({}).side, "left");
+  assert.equal(timelineSchema({ side: "left" }).side, "left");
+  assert.equal(timelineSchema({ side: "right" }).side, "right");
+  assert.throws(() => timelineSchema({ side: "top" }), TypeError);
+  assert.deepEqual(errors, []);
+});
+
 test("keeps the original 0.3.2 style corpus byte-for-byte", () => {
   const pattern = /\bconst css(?:\$\d+)? = ("(?:\\.|[^"\\])*");/gu;
   const styles = [...client.matchAll(pattern)].map((match) =>
@@ -89,6 +123,78 @@ test("bridges message images without replacing the component path", () => {
     compatibility.adapter.messageImagesSlot,
     "conversation.message.images",
   );
+});
+
+test("returns the complete lightweight index for long scrollable rails", async () => {
+  assert.doesNotMatch(host, /SEARCH_INDEX_MAX/u);
+
+  const events = [];
+  let seq = 0;
+  for (let turn = 1; turn <= 750; turn += 1) {
+    events.push({ seq: seq++, type: "turn/start", data: { turn } });
+    events.push({
+      seq: seq++,
+      time: turn,
+      type: "user/message",
+      surfaceOp: "append",
+      data: {
+        source: { kind: "user" },
+        content: [{ type: "text", text: `Prompt ${turn}` }],
+      },
+    });
+    events.push({
+      seq: seq++,
+      type: "turn/end",
+      data: { turn, reason: { kind: "completed" } },
+    });
+  }
+
+  let handler;
+  const errors = [];
+  const sessions = {
+    get: (sessionId) =>
+      sessionId === "long-lite-contract" ? { events } : undefined,
+  };
+  apply({
+    logger: { error: (message) => errors.push(message) },
+    inject: (services, install) => {
+      if (services.includes("sessions")) install({ sessions });
+    },
+    effect: (install) => install(),
+    webServer: {
+      register: (registration) => {
+        handler = registration.handler;
+        return () => undefined;
+      },
+    },
+  });
+  assert.equal(typeof handler, "function");
+
+  let status;
+  let responseText = "";
+  await handler(
+    {
+      method: "GET",
+      url: "/codex-timeline/search?sessionId=long-lite-contract&lite=1",
+    },
+    {
+      writeHead: (value) => {
+        status = value;
+      },
+      end: (value) => {
+        responseText = value;
+      },
+    },
+  );
+
+  const response = JSON.parse(responseText);
+  assert.equal(status, 200);
+  assert.equal(response.ok, true);
+  assert.equal(response.items.length, 750);
+  assert.equal(response.items[0].turn, 1);
+  assert.equal(response.items.at(-1).turn, 750);
+  assert.equal(response.total, 750);
+  assert.deepEqual(errors, []);
 });
 
 test("mounts additively and keeps failures inside the timeline", () => {

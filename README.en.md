@@ -10,7 +10,7 @@ English | [中文](README.md)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-A subtle user-Turn navigation rail attached to the left edge of the active DeepSeek Harness Web Chat transcript. It highlights the Turn at the reading position, jumps between prompts, and can automatically materialize every historical Turn and preview.
+A subtle user-Turn navigation rail for the active DeepSeek Harness Web Chat transcript. It defaults to the left edge and can be mirrored to the right in settings; it highlights the Turn at the reading position, jumps between prompts, and browses the complete history index and previews.
 
 ## Interface tour
 
@@ -45,7 +45,7 @@ The feature illustration summarizes the real interaction: hovering reveals Turn 
 
 1. Scroll the transcript and let the rail track the current Turn.
 2. Hover for two prompt lines and two answer lines; click or press Enter / Space to jump.
-3. The rail lists the RECENT N Turns (default 25, adjustable under Settings → Plugins → Plugin configuration); older Turns are reached via “Load earlier” or by raising the count.
+3. The rail starts with the latest N Turns (25 by default, adjustable under Settings → Plugins → Plugin configuration) and can be moved to the right. Hovering reveals up to two graded markers outside each scrollable edge; every mouse-wheel notch moves exactly one Turn with a short directional slide, without moving or resizing the rail.
 
 ## Compatibility
 
@@ -108,14 +108,15 @@ Restart DSH Web to return to the built-in Conversation UI.
 - Tracks the current viewport Turn without pulling a reader back to the bottom while output streams.
 - Expands nearby short bars into a stepped shape on hover and temporarily follows the pointer; leaving restores the viewport highlight.
 - Shows item x/y, time, status, two prompt lines, two model-answer lines, and real Turn duration, TTFT, and tok/s when available.
-- Supports click, Enter, Space, arrow keys, Home, End, `focus-visible`, and `prefers-reduced-motion`.
+- Supports click, Enter, Space, one-Turn arrow-key movement, one-window Page Up / Page Down movement, Home, End, `focus-visible`, and `prefers-reduced-motion`.
 - Reuses the official DSH history loader behind a compact top ellipsis; stable node IDs preserve the reader anchor after a prepend, and the control shows how many old turns remain.
-- The left rail shows the RECENT N Turns of the session (default 25, adjustable 5–50 under Settings → Plugins → Plugin configuration) without materializing any content: spacing follows your own “marker spacing” setting and every marker looks the same as before. Loaded Turns highlight the current reading position; unloaded Turns — from the Host `lite=1` index — hover to the same two-line summary and chain-load and jump on click. Older Turns stay reachable through “Load earlier”.
+- The desktop rail uses a fixed window over the complete session index (the latest 25 Turns by default, adjustable from 5–50 without materializing transcript content). Hovering or focusing the track reveals up to two complete markers outside each scrollable edge; length, weight, and opacity distinguish near from far previews. Every coarse wheel notch moves exactly one Turn and slides the window and edge markers by one pitch in that direction; rapid bursts use a shorter transition that retargets from the current intermediate frame instead of snapping or queueing motion, while fine trackpad input accumulates before stepping. The rail's absolute position and full-marker count stay unchanged, and reduced-motion mode disables the slide. At either boundary, scrolling naturally returns to the transcript; Ctrl/Command-wheel zoom and horizontal gestures are left untouched. Unloaded Turns come from the complete Host `lite=1` index, expose the same two-line hover summary, and chain-load official history pages before jumping when clicked.
+- The rail defaults to the left. Enabling **Show on right** mirrors the desktop rail, stepped markers, preview cards, search panel, and narrow-screen trigger. Every popup opens inward toward the transcript, while a right-edge safety gap keeps the DSH scrollbar and native details resize boundary available instead of covering the Host panel.
 - Searches materialized transcript text locally and the complete persisted session log through the same-origin Host route `/codex-timeline/search`, merging both result sets with highlighted keyword context. An unloaded hit chain-loads the official history pages and jumps there. Deployments without a `sessionQuery` service degrade to loaded-content-only search.
 - Shows the timeline even for one or two user messages (it hides only when nothing is loaded and no earlier history exists), so navigation and search work from the first message.
 - Collapses on narrow screens without covering the composer or reducing message readability.
-- The settings page (Settings → Plugins → Plugin configuration) offers an enable toggle and four sliders (left offset, center offset, marker spacing, turns shown); every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
-- The top-left ⋮ / search controls stay anchored; the position sliders move only the marker column.
+- The settings page (Settings → Plugins → Plugin configuration) offers **Enable** and **Show on right** toggles plus four sliders (edge offset, center offset, marker spacing, turns shown); every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
+- The ⋮ / search controls stay anchored on the selected side; the edge-offset slider moves only the marker column inward toward the transcript.
 
 ## Privacy
 
