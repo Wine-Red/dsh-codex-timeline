@@ -77,6 +77,16 @@ for (const required of [
   "shouldRenderRailSurface(preferences.enabled, favoritesOnly, visibleItems.length, hasMore)",
   "trackedKeys.current.size === 0 && !keepViewportRef.current",
   "settings.leftOffset",
+  "settings.landingFlash",
+  'setPreference("landingFlash", value)',
+  "next.landingFlash === this.snapshot.landingFlash",
+  "landingFlash: preferences.landingFlash !== false",
+  "function userBubbleElement(row)",
+  'row.querySelector("[data-time-hover-root]")',
+  '!child.hasAttribute("data-slot")',
+  "const bubble = userBubbleElement(element)",
+  "@keyframes RhpIHW_landing-flash",
+  "animation:RhpIHW_landing-flash .64s ease-out 1",
   "settings.showOnRight",
   'const railSide = preferences.side === "right" ? "right" : "left"',
   '"data-turn-nav-side": railSide',
@@ -220,6 +230,8 @@ for (const forbidden of [
   "MutationObserver",
   "monkey patch",
   "items.length < 3 && !hasMore",
+  "outline:2px solid color-mix(in srgb,var(--dsw-alias-brand-primary) 82%,transparent)",
+  "[data-chat-anchor-key][data-dsh-codex-timeline-landed=true]",
   "E:\\Program",
   "C:\\Users",
 ]) {
@@ -241,6 +253,9 @@ if (
   )
 ) {
   fail("host timeline side setting is missing or no longer defaults to left");
+}
+if (!host.includes("landingFlash: z.boolean().default(true)")) {
+  fail("host timeline landing-flash setting is missing or no longer opt-out");
 }
 if (!host.includes('path: "/codex-timeline"')) {
   fail("host timeline settings route is missing");

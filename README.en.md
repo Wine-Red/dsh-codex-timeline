@@ -12,8 +12,10 @@ English | [中文](README.md)
 
 A subtle user-Turn navigation rail for long DeepSeek Harness Web conversations. It marks only the prompts that actually steer the session, then adds a complete history index, previews, search, and reliable jumps beside the transcript. It defaults to the left and can be mirrored completely to the right.
 
-## What's new in 0.5.1
+## What's new in 0.5.2
 
+- **A quieter, more natural arrival cue**: successful jumps no longer draw a high-contrast outline. The target user bubble now flashes once with a short pulse derived from DSH's semantic theme color across light, dark, and colored themes.
+- **The flash is independently optional**: Settings → Plugins → Plugin configuration now includes a default-on **Flash after jump** switch. Turning it off leaves navigation, landing verification, and screen-reader announcements unchanged.
 - **Restore timeline mounting**: support DSH `0.1.1-rc.2`'s empty-session startup order by attaching the timeline when the transcript first becomes ready, without rebuilding rail state during history prepends.
 - **One selection really lands**: an unloaded Turn automatically chains the required history pages, protects the reading anchor, and verifies the final position.
 - **Edge guides are real targets**: both graded levels support hover previews, click, keyboard input, and the neighboring wave instead of acting as decoration.
@@ -142,7 +144,7 @@ Restart DSH Web to return to the built-in Conversation UI.
 - Arrow keys move one Turn, Page Up / Page Down move one window, and Home / End reach either boundary, with `focus-visible` and `prefers-reduced-motion` support.
 - **Show on right** mirrors the rail, edge guides, previews, search panel, and narrow-screen trigger while preserving the scrollbar and details resize boundary.
 - Narrow screens use a collapsed entry point. Desktop no longer duplicates automatic paging with a manual ellipsis.
-- Settings expose enable, side, edge offset, center offset, marker spacing, and Turns shown; preferences are persisted immediately to `settings.yaml`.
+- Settings expose enable, flash-after-jump, side, edge offset, center offset, marker spacing, and Turns shown; preferences are persisted immediately to `settings.yaml`.
 
 ## Privacy
 
@@ -159,7 +161,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.1.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.2.tgz"
 dsh --profile web --dump-config
 ```
 

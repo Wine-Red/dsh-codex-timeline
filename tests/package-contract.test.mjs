@@ -75,7 +75,7 @@ test("installer accepts only the verified DSH version", () => {
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });
 
-test("defaults timeline placement to left and validates the persisted side", () => {
+test("defaults landing flash on, placement left, and validates persisted settings", () => {
   let timelineSchema;
   const errors = [];
   apply({
@@ -97,6 +97,8 @@ test("defaults timeline placement to left and validates the persisted side", () 
   });
 
   assert.equal(typeof timelineSchema, "function");
+  assert.equal(timelineSchema({}).landingFlash, true);
+  assert.equal(timelineSchema({ landingFlash: false }).landingFlash, false);
   assert.equal(timelineSchema({}).side, "left");
   assert.equal(timelineSchema({ side: "left" }).side, "left");
   assert.equal(timelineSchema({ side: "right" }).side, "right");

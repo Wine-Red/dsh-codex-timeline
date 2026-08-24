@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-timeline",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Codex-style turn timeline and local conversation search for DeepSeek Harness Web",
   "homepage": "https://github.com/Wine-Red/dsh-codex-timeline#readme",
   "repository": {

@@ -214,7 +214,17 @@ test("coordinates adaptive jumps with DSH-style prepend anchoring and landing ve
     "(performance.now() - startedAt) / settle.duration",
     "performance.now() - startedAt < 900",
     "stableFrames = error <= 2 ? stableFrames + 1 : 0",
-    'element.setAttribute("data-dsh-codex-timeline-landed", "true")',
+    "function userBubbleElement(row)",
+    'row.querySelector("[data-time-hover-root]")',
+    '!child.hasAttribute("data-slot")',
+    "const bubble = userBubbleElement(element)",
+    'bubble.setAttribute("data-dsh-codex-timeline-landed", "true")',
+    "if (options.landingFlash !== false)",
+    "landingFlash: preferences.landingFlash !== false",
+    "@keyframes RhpIHW_landing-flash",
+    "box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,transparent)",
+    "animation:RhpIHW_landing-flash .64s ease-out 1",
+    "[data-dsh-codex-timeline-landed=true]{animation:none}",
     "jumpRequest.pages >= 400",
     "progress.stalls >= 5",
     "advanceJumpPagingProgress(progress",
@@ -235,6 +245,29 @@ test("coordinates adaptive jumps with DSH-style prepend anchoring and landing ve
   assert.doesNotMatch(client, /setPendingJumpId/u);
   assert.doesNotMatch(client, /gave up after 30 pages/u);
   assert.doesNotMatch(client, /nodes\.size > progress\.lastNodeCount/u);
+  assert.doesNotMatch(
+    client,
+    /data-dsh-codex-timeline-landed=true\]\{outline:2px/u,
+    "the arrival cue must not restore the high-contrast outline",
+  );
+  assert.doesNotMatch(
+    client,
+    /\[data-chat-anchor-key\]\[data-dsh-codex-timeline-landed=true\]/u,
+    "the arrival cue must target the bubble instead of the complete flow row",
+  );
+});
+
+test("persists an independently switchable landing flash", () => {
+  for (const value of [
+    "landingFlash: true",
+    "checked: settings.landingFlash",
+    'setPreference("landingFlash", value)',
+    "next.landingFlash === this.snapshot.landingFlash",
+    '"settings.landingFlash"',
+    '"settings.landingFlashHint"',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
 });
 
 test("mounts after an initially empty transcript without remounting on prepend", () => {
@@ -463,7 +496,6 @@ test("published rail helpers match the behavior-tested source model", () => {
       JSON.stringify(sourceResolveJumpSettle(...args)),
     );
   }
-
   let sourceGesture;
   let bundledGesture;
   for (const input of [

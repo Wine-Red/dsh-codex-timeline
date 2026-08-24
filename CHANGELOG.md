@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2 - 2026-08-25
+
+- Address [#6](https://github.com/Wine-Red/dsh-codex-timeline/issues/6): replace the high-contrast post-jump outline with one 640 ms pulse inside the target user bubble. The pulse derives its tint from DSH's semantic brand token so light, dark, and colored themes keep their own palette; it causes no layout shift, does not block interaction, and stands down for reduced-motion and forced-color users while the existing screen-reader announcement remains available.
+- Add a persisted, default-on **Flash after jump** preference under Settings → Plugins → Plugin configuration. Turning it off suppresses only the visual arrival pulse and leaves scrolling, landing verification, marker feedback, and accessibility announcements unchanged.
+
 ## 0.5.1 - 2026-08-24
 
 - Fix [#5](https://github.com/Wine-Red/dsh-codex-timeline/issues/5): render from projected Turn items before DOM-anchor measurement and retry the additive seat mount when DSH `0.1.1-rc.2` populates an initially empty Chat order. The 0.5.0 rail required `located.length > 0` before registering the anchors that make `located` non-empty, while its lifecycle optimization could also query `[data-chat-flow]` too early and never retry. The corrected startup path mounts the seat, renders from the Turn projection, then measures anchors in place; already-mounted rails still survive history prepends without losing jump, hover, or focus state.

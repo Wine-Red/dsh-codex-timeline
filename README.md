@@ -12,8 +12,10 @@
 
 为 DeepSeek Harness Web 长会话提供一个低干扰的用户 Turn 导航轨道。它只标记真正改变会话方向的用户轮次，在正文旁提供完整历史索引、预览、搜索和可靠跳转；默认位于左侧，也可以完整镜像到右侧。
 
-## 0.5.1 更新重点
+## 0.5.2 更新重点
 
+- **落点提示更轻、更自然**：定位成功后不再绘制高对比度外框，改为目标用户气泡进行一次短暂的主题色闪烁；浅色、深色与彩色主题均沿用 DSH 自身的语义颜色。
+- **闪烁可单独关闭**：设置 → 插件 → 插件配置新增“跳转后闪烁提示”开关，默认开启；关闭后跳转、落点校验与读屏播报保持不变。
 - **修复时间线不显示**：兼容 DSH `0.1.1-rc.2` 的空会话启动顺序，在正文首次就绪时补挂载时间线，同时避免历史补页重建轨道状态。
 - **一次选择即可定位**：点击未加载轮次会自动连续补页、保护阅读锚点并校验最终落点，不再需要反复点击。
 - **边缘索引也是真实入口**：窗口外的两级视觉指引支持悬停预览、点击、键盘操作和邻近波动，不再只是装饰。
@@ -142,7 +144,7 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 - 方向键移动一轮，Page Up / Page Down 移动一屏，Home / End 到达首尾；支持 `focus-visible` 和 `prefers-reduced-motion`。
 - 开启“显示在右侧”后，轨道、边缘指引、预览、搜索面板和窄屏入口完整镜像，并避开滚动条与详情栏拖拽边界。
 - 窄屏使用折叠入口；桌面端不再显示重复的手动补页省略号，点击未加载索引时自动补页。
-- 设置页提供启用、显示在右侧，以及距边缘距离、向中部偏移、标记间距、显示轮次数量；偏好即时写入 `settings.yaml`。
+- 设置页提供启用、跳转后闪烁提示、显示在右侧，以及距边缘距离、向中部偏移、标记间距、显示轮次数量；偏好即时写入 `settings.yaml`。
 
 ## 隐私
 
@@ -159,7 +161,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.1.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.2.tgz"
 dsh --profile web --dump-config
 ```
 
