@@ -3,49 +3,49 @@
 English | [中文](README.md)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/cover.png" width="960" alt="DSH Codex Timeline cover showing the turn rail, preview, and search" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/cover.png" width="960" alt="DSH Codex Timeline cover showing the turn rail, preview, and search" />
 </p>
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-A subtle user-Turn navigation rail for the active DeepSeek Harness Web Chat transcript. It defaults to the left edge and can be mirrored to the right in settings; it highlights the Turn at the reading position, jumps between prompts, and browses the complete history index and previews.
+A subtle user-Turn navigation rail for long DeepSeek Harness Web conversations. It marks only the prompts that actually steer the session, then adds a complete history index, previews, search, and reliable jumps beside the transcript. It defaults to the left and can be mirrored completely to the right.
+
+## What's new in 0.5.0
+
+- **One selection really lands**: an unloaded Turn automatically chains the required history pages, protects the reading anchor, and verifies the final position.
+- **Edge guides are real targets**: both graded levels support hover previews, click, keyboard input, and the neighboring wave instead of acting as decoration.
+- **Motion shows direction without wasting time**: nearby targets scroll smoothly; distant targets arrive immediately and finish with a 180ms directional settle. Rapid wheel input retargets the current animation.
+- **A cleaner, dependable surface**: the redundant desktop paging ellipsis is gone, and preview cards stay above transcript tables and sticky code blocks.
 
 ## Interface tour
 
-The rail stays quiet by default: each loaded user Turn is one short dash, and only the current reading position is highlighted. On hover, nearby markers expand into a stepped shape for accurate selection, then return to their compact state when the pointer leaves.
+The two captures below come from the real browser surface of DSH `0.1.1-rc.2` and plugin `0.5.0`. To protect local conversations, the transcript, preview, metrics, and search semantics were replaced in the capture browser with dedicated documentation copy. A neutral dark surface removes any unrelated appearance plugin from the result.
+
+### Default: complete, but quiet
+
+The main index and both edge-guide levels remain low-contrast static dashes until activated. Search and favorites stay pinned above the track without reducing transcript width.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/feature-preview.en.svg" width="960" alt="Turn preview and local search shown with test copy" />
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh.png" width="960" alt="The compact 0.5.0 timeline in DSH 0.1.1-rc.2, with search, favorites, and the complete static index" />
 </p>
 
-> Every prompt, answer, metric, and search result in the illustration and DSH captures below is dedicated test copy. No real conversation content is used.
+### Hover: preview, wave, and explicit depth
 
-Both images below were captured from DSH `0.1.0-rc.6` with this plugin installed. They show the same real rail in its compact and pointer-hover states:
+The selected marker expands to 39px while its three neighbors form a 30 / 21 / 15px wave. The preview exposes position, status, performance metrics, two prompt lines, and two answer lines, and remains above sticky transcript surfaces.
 
-<table>
-  <tr>
-    <th>Compact</th>
-    <th>Hover expansion</th>
-  </tr>
-  <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/timeline-default-dsh.png" width="460" alt="Compact Turn rail captured from DSH" /></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/v0.2.0/docs/images/timeline-hover-dsh.png" width="460" alt="Hover-expanded Turn rail and test preview captured from DSH" /></td>
-  </tr>
-  <tr>
-    <td>Low contrast without reducing transcript width</td>
-    <td>Pointer-following highlight that restores the current Turn on leave</td>
-  </tr>
-</table>
-
-The feature illustration summarizes the real interaction: hovering reveals Turn position, status, duration, TTFT, throughput, prompt, and model-answer context. Search shows each keyword in context and jumps directly to the matching Turn.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh.png" width="960" alt="The hover-expanded 0.5.0 timeline in DSH 0.1.1-rc.2, showing the graded wave and top-layer preview" />
+</p>
 
 ### Typical flow
 
 1. Scroll the transcript and let the rail track the current Turn.
 2. Hover for two prompt lines and two answer lines; click or press Enter / Space to jump.
-3. The rail starts with the latest N Turns (25 by default, adjustable under Settings → Plugins → Plugin configuration) and can be moved to the right. Hovering reveals up to two graded markers outside each scrollable edge; they also support previews, click-to-jump, and the neighboring wave. Every mouse-wheel notch moves exactly one Turn with a short directional slide, without moving or resizing the rail.
+3. Select an unloaded Turn once. The plugin materializes only the required history, restores the reading anchor, and completes the jump.
+4. Wheel over the rail to move exactly one Turn per notch. At either boundary, scrolling returns naturally to the transcript.
+5. Use search, favorites, keyboard navigation, or settings for the visible Turn count and rail side when needed.
 
 ## Compatibility
 
@@ -104,19 +104,36 @@ Restart DSH Web to return to the built-in Conversation UI.
 
 ## Features
 
-- Creates one marker only for a real user Turn. Tool calls, approval UI, plan UI, subagents, and assistant streaming chunks do not create noisy markers.
-- Tracks the current viewport Turn without pulling a reader back to the bottom while output streams.
-- Expands nearby short bars into a stepped shape on hover and temporarily follows the pointer; leaving restores the viewport highlight.
-- Shows item x/y, time, status, two prompt lines, two model-answer lines, and real Turn duration, TTFT, and tok/s when available.
-- Supports click, Enter, and Space. Nearby materialized targets use a short smooth scroll; distant or paged jumps place the viewport at most 88px before the target and ease out over 180ms, preserving direction without flying through dozens of screens. Reduced-motion jumps remain immediate. The landing is verified and corrected after layout settles, then confirmed by an 800ms theme-aware target outline. Wheel, touch, or pointer input immediately hands control back to the reader and cancels stale motion. Arrow keys move one Turn, Page Up / Page Down move one window, and Home / End reach either boundary, with `focus-visible` and `prefers-reduced-motion` support.
-- Selecting an unloaded marker or complete-session search result automatically reuses the official DSH history loader. Before each prepend it records the first visible semantic row and exact pixel offset, keeps that anchor current if the reader moves during loading, and restores it during layout so the transcript does not jump or drift. The desktop rail no longer duplicates this path with a manual paging button.
-- The desktop rail uses a fixed window over the complete session index (the latest 25 Turns by default, adjustable from 5–50 without materializing transcript content). Hovering or focusing the track reveals up to two complete markers outside each scrollable edge; length, weight, and opacity distinguish near from far previews. These edge markers are interactive rather than decorative: they share the main markers' preview, click, Enter / Space, and arrow-key behavior, and activation joins them to the main rail through the same 39 / 30 / 21 / 15px wave. When inactive, they retain the existing 7px / 5px two-level faded appearance. Every coarse wheel notch moves exactly one Turn and slides the window and edge markers by one pitch in that direction; rapid bursts use a shorter transition that retargets from the current intermediate frame instead of snapping or queueing motion, while fine trackpad input accumulates before stepping. The rail's absolute position and full-marker count stay unchanged, and reduced-motion mode disables both slide and width transitions. At either boundary, scrolling naturally returns to the transcript; Ctrl/Command-wheel zoom and horizontal gestures are left untouched. Unloaded Turns come from the complete Host `lite=1` index and expose the same two-line hover summary. A click serially loads official history pages, shows lightweight page progress only after 300ms, and stops as soon as it lands or paging is confirmed stalled.
-- The rail defaults to the left. Enabling **Show on right** mirrors the desktop rail, stepped markers, preview cards, search panel, and narrow-screen trigger. Every popup opens inward toward the transcript, while a right-edge safety gap keeps the DSH scrollbar and native details resize boundary available instead of covering the Host panel.
-- Searches materialized transcript text locally and the complete persisted session log through the same-origin Host route `/codex-timeline/search`, merging both result sets with highlighted keyword context. An unloaded hit uses the same anchor-preserving, cancellable, verified paged jump. Deployments without a `sessionQuery` service degrade to loaded-content-only search.
-- Shows the timeline even for one or two user messages (it hides only when nothing is loaded and no earlier history exists), so navigation and search work from the first message.
-- Collapses on narrow screens without covering the composer or reducing message readability.
-- The settings page (Settings → Plugins → Plugin configuration) offers **Enable** and **Show on right** toggles plus four sliders (edge offset, center offset, marker spacing, turns shown); every preference is written through to the DSH settings document (settings.yaml) immediately and survives reloads and browser switches.
-- The collapsed-rail opener and search control stay anchored on the selected side; the edge-offset slider moves only the marker column inward toward the transcript.
+### Complete-session index
+
+- Creates markers only for real user Turns. Tool calls, approval UI, plan UI, subagents, and assistant streaming chunks do not add noise.
+- The Host `lite=1` index covers the complete persisted session without the former 500-Turn truncation, while transcript content remains on demand.
+- The desktop rail uses a fixed window (the latest 25 Turns by default, adjustable from 5–50) plus two complete guide levels at each scrollable edge.
+- Main and edge markers all support previews, click, Enter / Space, and arrow keys. Their inactive 7px / 5px guide lengths preserve the existing quiet appearance.
+- Each coarse wheel notch moves exactly one Turn. Bursts retarget the current intermediate frame, fine trackpad input accumulates, and boundary input returns to the transcript.
+
+### Reliable jumps
+
+- Nearby materialized targets scroll smoothly. Distant targets arrive at most 88px before the destination, then finish with a 180ms ease-out.
+- Unloaded markers and complete-session search results share DSH's official history loader. Paging is single-flight, with lightweight page progress appearing only after 300ms.
+- Before each prepend, the plugin captures the first visible semantic row and exact pixel offset. If the reader moves during loading, that anchor follows the reader and is restored after layout.
+- Landing is verified and corrected to within 2px, then confirmed by an 800ms theme-aware outline. Wheel, touch, or a new selection immediately cancels stale work.
+- Progress combines Chat order, the first materialized node, and registered DOM-anchor growth, avoiding false stalls when the Host projection Map stays stable.
+
+### Preview, search, and favorites
+
+- The preview shows item x/y, time, status, two prompt lines, two answer lines, and real Turn duration, TTFT, and tok/s when available.
+- Preview and branch/favorite actions stay above sticky transcript surfaces instead of being covered by code-block banners.
+- Search merges materialized transcript text with the complete persisted session log and highlights keyword context. An unloaded result is still a one-selection jump.
+- Deployments without a `sessionQuery` service degrade to loaded-content-only search without affecting timeline navigation.
+
+### Layout, keyboard, and settings
+
+- The active marker follows the viewport without dragging a reader back to the bottom while output streams. The rail also appears for one- and two-message sessions.
+- Arrow keys move one Turn, Page Up / Page Down move one window, and Home / End reach either boundary, with `focus-visible` and `prefers-reduced-motion` support.
+- **Show on right** mirrors the rail, edge guides, previews, search panel, and narrow-screen trigger while preserving the scrollbar and details resize boundary.
+- Narrow screens use a collapsed entry point. Desktop no longer duplicates automatic paging with a manual ellipsis.
+- Settings expose enable, side, edge offset, center offset, marker spacing, and Turns shown; preferences are persisted immediately to `settings.yaml`.
 
 ## Privacy
 
@@ -133,11 +150,11 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.2.0.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.0.tgz"
 dsh --profile web --dump-config
 ```
 
-`lib/client.js` is the SHA-256-pinned compatibility artifact generated for rc.6. `scripts/prepare-dist.mjs` only normalizes package identity and local build paths; `scripts/verify-dist.mjs` checks its slot, observer, interaction, and hash contracts. `src/navigation-model.mjs` retains independently testable Turn projection and search logic. See [NOTICE](NOTICE) for upstream attribution.
+`lib/client.js` is the SHA-256-pinned compatibility artifact generated for DSH `0.1.1-rc.2`. `scripts/prepare-dist.mjs` only normalizes package identity and local build paths; `scripts/verify-dist.mjs` checks its slot, observer, interaction, and hash contracts. `src/navigation-model.mjs` retains independently testable Turn projection, rail-window, jump-policy, and search logic. See [NOTICE](NOTICE) for upstream attribution.
 
 ## Upgrade audit
 
@@ -163,4 +180,4 @@ If a capability changes, publish a separately verified adapter. Do not let this 
 
 ## License
 
-[MIT](LICENSE). The package contains an rc.6 compatibility adapter built from MIT-licensed DeepSeek Harness sources; see [NOTICE](NOTICE).
+[MIT](LICENSE). The package contains a `0.1.1-rc.2` compatibility adapter built from MIT-licensed DeepSeek Harness sources; see [NOTICE](NOTICE).
