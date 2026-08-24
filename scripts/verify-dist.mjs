@@ -85,8 +85,8 @@ for (const required of [
   "--turn-nav-right-safe-inset",
   'data-turn-nav-side=\\"right\\"] .RhpIHW_tooltip{left:auto;right:calc(100% + 24px)',
   'data-turn-nav-side=\\"right\\"] .RhpIHW_searchPanel{left:auto;right:42px}',
-  ".RhpIHW_markerSlot::after{pointer-events:none}",
-  ".RhpIHW_markerSlot[data-turn-nav-disclosed=true]::after",
+  ":is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)::after{pointer-events:none}",
+  ":is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)[data-turn-nav-disclosed=true]::after",
   "[data-details-collapsed]",
   "--turn-nav-spacing",
   "--turn-nav-center",
@@ -103,15 +103,15 @@ for (const required of [
   "function remoteItemFromHit",
   "const [remoteSearch, setRemoteSearch]",
   '"timeline.search.countRemote"',
-  "allItems.find((candidate) => candidate.id === pendingJumpId)",
+  "allItems.find((candidate) => candidate.id === jumpRequest.id)",
   "timeline.search.hint",
   // full-session index feed + rail (0.4.0)
   "function fetchRemoteIndex",
   "const [remoteIndex, setRemoteIndex]",
-  '"timeline.earlierCount"',
   "unloaded: false",
   "const railGap",
   "const railStartOffset",
+  "const railTrackTop = 52",
   "preferences.recentTurns ?? 25",
   "function deriveRailWindow",
   "function deriveRailBand",
@@ -128,17 +128,45 @@ for (const required of [
   'edge: "newer"',
   '"data-turn-nav-peek": edge',
   '"data-turn-nav-peek-depth": depth',
+  '"data-turn-nav-peek-item": item.id',
+  '"data-turn-nav-peek-slot": relativeIndex',
+  'target.closest("[data-turn-nav-peek-item]")',
+  'preview.getAttribute("data-turn-nav-peek-item")',
+  'preview.getAttribute("data-turn-nav-peek-slot")',
   "children: railBandItems.map",
   "translate3d(0, ${relativeIndex * railGap}px, 0)",
   '"data-turn-nav-motion": railMotionMode',
   "classifyRailMotion(railLastMotionAtRef.current, motionAt)",
   "railTabStopId === item.id",
+  "const railTabStopId = railBandItems.some",
+  ".RhpIHW_railBandSlot[data-turn-nav-disclosed=true] :is(.RhpIHW_mark,.RhpIHW_railPeekMark){width:39px!important",
   "settings.recentTurns",
   "timeLabelSameDay",
   "remoteIndexCache",
   "const allItems = indexItems",
   "jumpMeasureTick",
-  "jumpPagesRef",
+  "jumpSequenceRef",
+  "cancelScroll: (0, react.useCallback)",
+  "manualScrollVersion() !== jumpRequest.manualScrollVersion",
+  "resolveJumpBehavior",
+  "resolveJumpSettle",
+  "advanceJumpPagingProgress",
+  "anchorCount: materializedAnchorCount()",
+  "pagingRestoreRef",
+  "registeredAnchorsRef",
+  "syncNavigationAnchors",
+  "transition:width .16s cubic-bezier(.22,.75,.18,1)",
+  "capturePagingAnchor",
+  "loadOlder: loadOlderAnchored",
+  ".B_rMOG_navigationSeat{width:100%;margin:0;z-index:20}",
+  "data-dsh-codex-timeline-landed",
+  '"data-turn-nav-jump": markerJumpState ?? void 0',
+  '"aria-live": "polite"',
+  "const jumpNoticeTimerRef = (0, react.useRef)(null)",
+  'className: "RhpIHW_jumpNotice"',
+  '"timeline.jump.loadingProgress"',
+  "jumpRequest.pages >= 400",
+  "progress.stalls >= 5",
   'kind === "user" || kind === "steering"',
 ]) {
   if (!client.includes(required)) fail(`client is missing ${required}`);
@@ -155,9 +183,27 @@ for (const dropped of [
   ".dsh-tl-jumpStatus",
   "const [jumpStage, setJumpStage]",
   "function jumpStatusText",
+  "const [pendingJumpId",
+  "setPendingJumpId",
+  "jumpPagesRef",
+  "const unloadedCount",
+  "const earlierLabel",
+  '"timeline.earlierCount"',
 ]) {
   if (client.includes(dropped))
     fail(`client still contains removed panel marker ${dropped}`);
+}
+const desktopRailStart = client.indexOf("railVisible &&");
+const desktopRailEnd = client.indexOf("drawerOpen &&", desktopRailStart);
+if (desktopRailStart < 0 || desktopRailEnd <= desktopRailStart) {
+  fail("client desktop rail branch could not be located");
+}
+if (
+  client
+    .slice(desktopRailStart, desktopRailEnd)
+    .includes("TurnNavigation_module_css_default.earlier")
+) {
+  fail("client still renders the redundant desktop load-earlier control");
 }
 if (
   client.includes("overflow-y:auto;justify-content:flex-start") ||

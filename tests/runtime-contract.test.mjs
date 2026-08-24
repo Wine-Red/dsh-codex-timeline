@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { Script, runInNewContext } from "node:vm";
 import {
+  advanceJumpPagingProgress as sourceAdvanceJumpPagingProgress,
   accumulateRailWheel as sourceAccumulateRailWheel,
   classifyRailMotion as sourceClassifyRailMotion,
   deriveRailBand as sourceDeriveRailBand,
@@ -10,6 +11,8 @@ import {
   deriveRailWindow as sourceDeriveRailWindow,
   railSlotAtPointer as sourceRailSlotAtPointer,
   railWindowStartForIndex as sourceRailWindowStartForIndex,
+  resolveJumpBehavior as sourceResolveJumpBehavior,
+  resolveJumpSettle as sourceResolveJumpSettle,
   resolveRailWheel as sourceResolveRailWheel,
   shouldRenderRailSurface as sourceShouldRenderRailSurface,
   stepRailWindow as sourceStepRailWindow,
@@ -67,7 +70,7 @@ function bundledRailModel() {
   const block = client.slice(start, end);
   return runInNewContext(`(() => {
 ${block}
-return { accumulateRailWheel, classifyRailMotion, deriveRailBand, deriveRailGeometry, deriveRailWindow, railSlotAtPointer, railWindowStartForIndex, resolveRailWheel, shouldRenderRailSurface, stepRailWindow };
+return { accumulateRailWheel, advanceJumpPagingProgress, classifyRailMotion, deriveRailBand, deriveRailGeometry, deriveRailWindow, railSlotAtPointer, railWindowStartForIndex, resolveJumpBehavior, resolveJumpSettle, resolveRailWheel, shouldRenderRailSurface, stepRailWindow };
 })()`);
 }
 
@@ -187,6 +190,68 @@ test("keeps paging, keyboard, reduced-motion, search, and settings contracts", (
   );
 });
 
+test("coordinates adaptive jumps with DSH-style prepend anchoring and landing verification", () => {
+  for (const value of [
+    "const pagingRestoreRef = (0, react.useRef)(null)",
+    "const capturePagingAnchor = (0, react.useCallback)",
+    "loadOlder: loadOlderAnchored",
+    "scrollport.scrollTop += flowTop(row, scrollport) - saved.top",
+    "const scrollRequestRef = (0, react.useRef)(0)",
+    "const manualScrollRef = (0, react.useRef)(0)",
+    "cancelScroll: (0, react.useCallback)",
+    "cancelScroll();",
+    "manualScrollVersion() !== jumpRequest.manualScrollVersion",
+    "function resolveJumpBehavior",
+    "function resolveJumpSettle",
+    "options.loadedPages ?? 0",
+    "const beforeTarget = Math.max(0, Math.min(limit(), top - settle.offset))",
+    "const eased = 1 - Math.pow(1 - progress, 3)",
+    "(performance.now() - startedAt) / settle.duration",
+    "performance.now() - startedAt < 900",
+    "stableFrames = error <= 2 ? stableFrames + 1 : 0",
+    'element.setAttribute("data-dsh-codex-timeline-landed", "true")',
+    "jumpRequest.pages >= 400",
+    "progress.stalls >= 5",
+    "advanceJumpPagingProgress(progress",
+    "anchorCount: materializedAnchorCount()",
+    'role: "status"',
+    '"aria-live": "polite"',
+    '"data-turn-nav-jump": markerJumpState ?? void 0',
+    "const jumpNoticeTimerRef = (0, react.useRef)(null)",
+    "}, 300)",
+    'className: "RhpIHW_jumpNotice"',
+    '"timeline.jump.loadingProgress"',
+    '"timeline.jump.landed"',
+    '"timeline.jump.failed"',
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
+  assert.doesNotMatch(client, /const \[pendingJumpId/u);
+  assert.doesNotMatch(client, /setPendingJumpId/u);
+  assert.doesNotMatch(client, /gave up after 30 pages/u);
+  assert.doesNotMatch(client, /nodes\.size > progress\.lastNodeCount/u);
+});
+
+test("keeps the navigation portal mounted while history pages prepend", () => {
+  const start = client.indexOf("function AdditiveTurnNavigation");
+  const end = client.indexOf("function apply$1", start);
+  const additive = client.slice(start, end);
+  for (const value of [
+    "const registeredAnchorsRef = (0, react.useRef)",
+    "const syncNavigationAnchors = (0, react.useCallback)",
+    "registeredAnchorsRef.current = next",
+    "}, [sessionId, navigation.registerAnchor])",
+    "}, [order, syncNavigationAnchors])",
+  ]) {
+    assert.ok(additive.includes(value), value);
+  }
+  assert.doesNotMatch(
+    additive,
+    /sessionId,\s*order,\s*navigation\.registerAnchor/u,
+    "order changes must update anchors without remounting the portal",
+  );
+});
+
 test("removed auto-load-all and made the recent-turns count a setting", () => {
   for (const dropped of [
     "autoLoadTimerRef",
@@ -220,7 +285,7 @@ test("persists an opt-in right side and mirrors the complete interaction surface
   for (const value of [
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(var(--dsh-scrollbar-width, 8px),env(safe-area-inset-right, 0px))}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail{left:auto;right:calc(-4px + var(--turn-nav-right-safe-inset));pointer-events:none}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail>:is(.RhpIHW_railClose,.RhpIHW_earlier,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger,.RhpIHW_searchPanel,.RhpIHW_track){pointer-events:auto}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail>:is(.RhpIHW_railClose,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger,.RhpIHW_searchPanel,.RhpIHW_track){pointer-events:auto}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail .RhpIHW_track{left:auto;right:calc(var(--turn-nav-left, 0px) + 4px);width:38px}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_marker{left:auto;right:0}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mark{left:auto;right:12px;transform-origin:right center}',
@@ -230,8 +295,8 @@ test("persists an opt-in right side and mirrors the complete interaction surface
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mobileTrigger{left:auto;right:max(8px,env(safe-area-inset-right, 0px))}',
     '[data-details-collapsed] .RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(0px,env(safe-area-inset-right, 0px))}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_tooltip{left:auto;right:calc(100% + 24px)}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_markerSlot::after{left:auto;right:100%}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_earlier,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger){left:auto;right:7px}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)::after{left:auto;right:100%}',
+    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger){left:auto;right:7px}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railClose{left:auto;right:28px}',
     '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_searchPanel{left:auto;right:42px}',
   ]) {
@@ -240,6 +305,23 @@ test("persists an opt-in right side and mirrors the complete interaction surface
 
   assert.ok(client.includes(".RhpIHW_rail{left:-4px}"));
   assert.doesNotMatch(client, /scaleX\(-1\)/u);
+});
+
+test("removes the redundant desktop load-earlier control without removing automatic paging", () => {
+  const desktopRailStart = client.indexOf("railVisible &&");
+  const desktopRailEnd = client.indexOf("drawerOpen &&", desktopRailStart);
+  assert.ok(desktopRailStart >= 0 && desktopRailEnd > desktopRailStart);
+
+  const desktopRail = client.slice(desktopRailStart, desktopRailEnd);
+  assert.doesNotMatch(
+    desktopRail,
+    /TurnNavigation_module_css_default\.earlier/u,
+  );
+  assert.doesNotMatch(client, /const (?:unloadedCount|earlierLabel)\b/u);
+  assert.doesNotMatch(client, /"timeline\.earlierCount"/u);
+  assert.ok(client.includes("const railTrackTop = 52"));
+  assert.ok(client.includes("loadOlder: loadOlderAnchored"));
+  assert.ok(client.includes("TurnNavigation_module_css_default.drawerEarlier"));
 });
 
 test("uses a fixed logical rail window with one-item wheel steps", () => {
@@ -305,6 +387,23 @@ test("published rail helpers match the behavior-tested source model", () => {
       sourceShouldRenderRailSurface(...args),
     );
   }
+  const progress = {
+    firstKey: "node-900",
+    orderLength: 100,
+    anchorCount: 105,
+    stalls: 2,
+  };
+  for (const snapshot of [
+    { firstKey: "node-700", orderLength: 100, anchorCount: 105 },
+    { firstKey: "node-900", orderLength: 120, anchorCount: 105 },
+    { firstKey: "node-900", orderLength: 100, anchorCount: 433 },
+    { firstKey: "node-900", orderLength: 100, anchorCount: 105 },
+  ]) {
+    assert.equal(
+      JSON.stringify(bundled.advanceJumpPagingProgress(progress, snapshot)),
+      JSON.stringify(sourceAdvanceJumpPagingProgress(progress, snapshot)),
+    );
+  }
   for (const [previous, current] of [
     [Number.NEGATIVE_INFINITY, 0],
     [0, 119],
@@ -330,6 +429,29 @@ test("published rail helpers match the behavior-tested source model", () => {
     assert.equal(
       bundled.railWindowStartForIndex(10, index, entries.length, 25),
       sourceRailWindowStartForIndex(10, index, entries.length, 25),
+    );
+  }
+  for (const args of [
+    [200, 800, false, 0],
+    [1201, 800, false, 0],
+    [200, 800, true, 0],
+    [200, 800, false, 1],
+  ]) {
+    assert.equal(
+      bundled.resolveJumpBehavior(...args),
+      sourceResolveJumpBehavior(...args),
+    );
+  }
+  for (const args of [
+    [1201, 800, false, 0],
+    [-1201, 800, false, 0],
+    [200, 400, false, 1],
+    [1200, 800, false, 0],
+    [1201, 800, true, 0],
+  ]) {
+    assert.equal(
+      JSON.stringify(bundled.resolveJumpSettle(...args)),
+      JSON.stringify(sourceResolveJumpSettle(...args)),
     );
   }
 
@@ -383,8 +505,9 @@ test("published rail helpers match the behavior-tested source model", () => {
 test("shows two complete graded edge markers and animates stable slots", () => {
   for (const value of [
     ".RhpIHW_railBandSlot{transition:transform .17s cubic-bezier(.22,.75,.18,1);will-change:transform}",
-    ".RhpIHW_railPreviewSlot{pointer-events:none;opacity:0;z-index:0;transition:transform .17s cubic-bezier(.22,.75,.18,1),opacity .09s ease-in}",
+    ".RhpIHW_railPreviewSlot{pointer-events:auto;cursor:pointer;opacity:0;z-index:0;transition:transform .17s cubic-bezier(.22,.75,.18,1),opacity .09s ease-in}",
     ".RhpIHW_track:hover .RhpIHW_railPreviewSlot,.RhpIHW_track:focus-within .RhpIHW_railPreviewSlot{opacity:1",
+    ".RhpIHW_railPeekMark{pointer-events:none;background:var(--dsw-alias-label-tertiary);border-radius:2px;position:absolute;top:50%;transform:translateY(-50%);transition:width .16s cubic-bezier(.22,.75,.18,1),opacity .08s ease-out}",
     '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"1\\"] .RhpIHW_railPeekMark{width:7px;height:2px;left:13px;opacity:.42}',
     '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"2\\"] .RhpIHW_railPeekMark{width:5px;height:2px;left:14px;opacity:.24}',
     '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railBandSlot{transition-duration:.11s;transition-timing-function:cubic-bezier(.16,.84,.24,1)}',
@@ -397,10 +520,11 @@ test("shows two complete graded edge markers and animates stable slots", () => {
     'edge: "newer"',
     '"data-turn-nav-peek": edge',
     '"data-turn-nav-peek-depth": depth',
+    '"data-turn-nav-peek-item": item.id',
+    '"data-turn-nav-peek-slot": relativeIndex',
     "translate3d(0, ${relativeIndex * railGap}px, 0)",
     '"data-turn-nav-motion": railMotionMode',
     "classifyRailMotion(railLastMotionAtRef.current, motionAt)",
-    '"aria-hidden": true',
   ]) {
     assert.ok(client.includes(value), value);
   }
@@ -421,6 +545,7 @@ test("shows two complete graded edge markers and animates stable slots", () => {
   );
   assert.ok(client.includes("children: railBandItems.map"));
   assert.match(client, /key: item\.id/u);
+  assert.doesNotMatch(client, /\.RhpIHW_railPreviewSlot\{pointer-events:none/u);
   assert.match(
     client,
     /onMouseLeave: \(\) => \{\s+hoveredSlotRef\.current = null;\s+setHoveredId\(null\)/u,
@@ -428,6 +553,10 @@ test("shows two complete graded edge markers and animates stable slots", () => {
   for (const value of [
     "onMouseEnter: syncRailHoverAtPointer",
     "onMouseMove: syncRailHoverAtPointer",
+    'target.closest("[data-turn-nav-peek-item]")',
+    'preview.getAttribute("data-turn-nav-peek-item")',
+    'const previewSlot = Number(preview.getAttribute("data-turn-nav-peek-slot"))',
+    "hoveredSlotRef.current = Number.isInteger(previewSlot) ? previewSlot : null",
     "railSlotAtPointer(event.clientY, bounds.top, railStartOffset, railGap, railItems.length)",
     "setHoveredId((current) => current === nextId ? current : nextId)",
   ]) {
@@ -444,6 +573,41 @@ test("shows two complete graded edge markers and animates stable slots", () => {
     client.lastIndexOf(".RhpIHW_markerSlot{min-height:0}") >
       client.indexOf(".RhpIHW_markerSlot{position:relative;height:"),
   );
+});
+
+test("makes graded edge markers previewable, jumpable, and part of the wave", () => {
+  const start = client.indexOf("if (edge !== void 0) return");
+  const end = client.indexOf("const index = windowIndex", start);
+  const previewBranch = client.slice(start, end);
+  const previewOuter = previewBranch.slice(
+    0,
+    previewBranch.indexOf("children: ["),
+  );
+
+  assert.ok(start >= 0 && end > start);
+  assert.doesNotMatch(previewOuter, /aria-hidden/u);
+  for (const value of [
+    'role: "button"',
+    '"aria-label": ariaLabel',
+    '"aria-current": current ? "location" : void 0',
+    "tabIndex: railTabStopId === item.id ? 0 : -1",
+    "onClick: activateItem",
+    "onMarkerKeyDown(event, item)",
+    "disclosed &&",
+    "(Tooltip, {",
+  ]) {
+    assert.ok(previewBranch.includes(value), value);
+  }
+  assert.match(client, /const railTabStopId = railBandItems\.some/u);
+  for (const value of [
+    ".RhpIHW_railBandSlot[data-turn-nav-disclosed=true] :is(.RhpIHW_mark,.RhpIHW_railPeekMark){width:39px!important",
+    ".RhpIHW_railBandSlot:has(+ .RhpIHW_railBandSlot[data-turn-nav-disclosed=true]) :is(.RhpIHW_mark,.RhpIHW_railPeekMark)",
+    "{width:30px!important;left:12px!important;opacity:.72}",
+    "{width:21px!important;left:12px!important;opacity:.58}",
+    "{width:15px!important;left:12px!important;opacity:.46}",
+  ]) {
+    assert.ok(client.includes(value), value);
+  }
 });
 
 test("keyboard navigation crosses rail windows without losing the tab stop", () => {
@@ -478,7 +642,7 @@ test("keeps current and disclosed marker states visually distinct", () => {
   );
   assert.ok(
     client.includes(
-      ".RhpIHW_markerSlot .RhpIHW_mark{transition:opacity .08s,transform .12s}@media (prefers-reduced-motion:reduce){.RhpIHW_markerSlot .RhpIHW_mark{transition:none}}",
+      ".RhpIHW_markerSlot .RhpIHW_mark{transition:width .16s cubic-bezier(.22,.75,.18,1),opacity .08s ease-out,transform .12s ease-out}@media (prefers-reduced-motion:reduce){.RhpIHW_markerSlot .RhpIHW_mark{transition:none}}",
     ),
   );
   assert.ok(
@@ -499,13 +663,19 @@ test("keeps current and disclosed marker states visually distinct", () => {
 test("leaves a bridged gap between an expanded marker and its tooltip", () => {
   assert.ok(
     client.includes(
-      ".RhpIHW_tooltip{left:calc(100% + 24px)}.RhpIHW_markerSlot::after{width:24px}",
+      ".RhpIHW_tooltip{left:calc(100% + 24px)}.RhpIHW_markerSlot::after,.RhpIHW_railPreviewSlot::after{width:24px}",
     ),
   );
   assert.ok(
     client.includes(
-      ".RhpIHW_markerSlot::after{pointer-events:none}.RhpIHW_markerSlot[data-turn-nav-disclosed=true]::after,.RhpIHW_markerSlot:focus-within::after{pointer-events:auto}",
+      ":is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)::after{pointer-events:none}:is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)[data-turn-nav-disclosed=true]::after,:is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot):focus-within::after{pointer-events:auto}",
     ),
+  );
+});
+
+test("keeps timeline previews above sticky transcript surfaces", () => {
+  assert.ok(
+    client.includes(".B_rMOG_navigationSeat{width:100%;margin:0;z-index:20}"),
   );
 });
 

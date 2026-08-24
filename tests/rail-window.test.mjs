@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  advanceJumpPagingProgress,
   accumulateRailWheel,
   deriveRailBand,
   deriveRailGeometry,
@@ -8,6 +9,8 @@ import {
   classifyRailMotion,
   railSlotAtPointer,
   railWindowStartForIndex,
+  resolveJumpBehavior,
+  resolveJumpSettle,
   resolveRailWheel,
   shouldRenderRailSurface,
   stepRailWindow,
@@ -20,6 +23,81 @@ const items = (from, to) =>
 
 const ids = (window) => window.items.map((item) => item.id);
 const peekIds = (entries) => entries.map((item) => item.id);
+
+test("uses spatial motion only for nearby already-materialized jumps", () => {
+  assert.equal(resolveJumpBehavior(0, 800), "smooth");
+  assert.equal(resolveJumpBehavior(1200, 800), "smooth");
+  assert.equal(resolveJumpBehavior(1201, 800), "auto");
+  assert.equal(resolveJumpBehavior(200, 800, true), "auto");
+  assert.equal(resolveJumpBehavior(200, 800, false, 1), "auto");
+  assert.equal(resolveJumpBehavior(Number.NaN, 800), "auto");
+  assert.equal(resolveJumpBehavior(20, 0), "auto");
+});
+
+test("adds only a short directional settle to instantaneous jumps", () => {
+  assert.deepEqual(resolveJumpSettle(1201, 800), {
+    offset: 88,
+    duration: 180,
+  });
+  assert.deepEqual(resolveJumpSettle(-1201, 800), {
+    offset: -88,
+    duration: 180,
+  });
+  assert.deepEqual(resolveJumpSettle(200, 400, false, 1), {
+    offset: 48,
+    duration: 180,
+  });
+  assert.deepEqual(resolveJumpSettle(1200, 800), {
+    offset: 0,
+    duration: 0,
+  });
+  assert.deepEqual(resolveJumpSettle(1201, 800, true), {
+    offset: 0,
+    duration: 0,
+  });
+  assert.deepEqual(resolveJumpSettle(Number.NaN, 800, false, 1), {
+    offset: 0,
+    duration: 0,
+  });
+});
+
+test("recognizes semantic or DOM growth across long history jumps", () => {
+  const initial = {
+    firstKey: "node-900",
+    orderLength: 100,
+    anchorCount: 105,
+    stalls: 2,
+  };
+  assert.deepEqual(
+    advanceJumpPagingProgress(initial, {
+      firstKey: "node-700",
+      orderLength: 100,
+      anchorCount: 105,
+    }),
+    {
+      firstKey: "node-700",
+      orderLength: 100,
+      anchorCount: 105,
+      stalls: 0,
+    },
+  );
+  assert.equal(
+    advanceJumpPagingProgress(initial, {
+      firstKey: "node-900",
+      orderLength: 100,
+      anchorCount: 433,
+    }).stalls,
+    0,
+  );
+  assert.equal(
+    advanceJumpPagingProgress(initial, {
+      firstKey: "node-900",
+      orderLength: 100,
+      anchorCount: 105,
+    }).stalls,
+    3,
+  );
+});
 
 test("defaults to the newest 25 items without changing the visible count", () => {
   const window = deriveRailWindow(items(1, 60));

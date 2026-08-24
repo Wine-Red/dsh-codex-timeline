@@ -39,6 +39,10 @@ const RAIL_WHEEL_DISCRETE_THRESHOLD = 80;
 const RAIL_WHEEL_IDLE_RESET_MS = 160;
 const RAIL_WHEEL_STEP_COOLDOWN_MS = 48;
 const RAIL_MOTION_BURST_MS = 120;
+const JUMP_SMOOTH_VIEWPORT_LIMIT = 1.5;
+const JUMP_SETTLE_MAX_DISTANCE_PX = 88;
+const JUMP_SETTLE_VIEWPORT_RATIO = 0.12;
+const JUMP_SETTLE_DURATION_MS = 180;
 
 function railWindowLimit(value) {
   return Number.isFinite(value) && value > 0
@@ -385,6 +389,98 @@ export function resolveRailWheel(state, input, start, itemCount, visibleLimit) {
     step: gesture.step,
     moved: next !== current,
     shouldPreventDefault: true,
+  };
+}
+
+/**
+ * Keep spatial continuity for nearby materialized Turns without animating a
+ * reader through dozens of screens. A target reached through history paging is
+ * always placed immediately, then identified with a separate landing cue.
+ */
+export function resolveJumpBehavior(
+  distance,
+  viewportHeight,
+  reducedMotion = false,
+  loadedPages = 0,
+) {
+  if (reducedMotion === true || loadedPages > 0) return "auto";
+  const height = Number.isFinite(viewportHeight)
+    ? Math.max(0, viewportHeight)
+    : 0;
+  const delta = Number.isFinite(distance)
+    ? Math.abs(distance)
+    : Number.POSITIVE_INFINITY;
+  if (height <= 0 || delta > height * JUMP_SMOOTH_VIEWPORT_LIMIT) return "auto";
+  return "smooth";
+}
+
+/**
+ * Turn an otherwise instantaneous long jump into a brief directional arrival.
+ * The caller first places the viewport this signed distance before the target,
+ * then eases the final segment. Nearby jumps already have native smooth motion;
+ * reduced-motion users receive no synthesized movement.
+ */
+export function resolveJumpSettle(
+  distance,
+  viewportHeight,
+  reducedMotion = false,
+  loadedPages = 0,
+) {
+  if (
+    reducedMotion === true ||
+    resolveJumpBehavior(
+      distance,
+      viewportHeight,
+      reducedMotion,
+      loadedPages,
+    ) === "smooth"
+  ) {
+    return { offset: 0, duration: 0 };
+  }
+  const height = Number.isFinite(viewportHeight)
+    ? Math.max(0, viewportHeight)
+    : 0;
+  const delta = Number.isFinite(distance) ? distance : 0;
+  if (height <= 0 || Math.abs(delta) <= 2) {
+    return { offset: 0, duration: 0 };
+  }
+  const offset =
+    Math.sign(delta) *
+    Math.min(
+      Math.abs(delta),
+      JUMP_SETTLE_MAX_DISTANCE_PX,
+      height * JUMP_SETTLE_VIEWPORT_RATIO,
+    );
+  return { offset, duration: JUMP_SETTLE_DURATION_MS };
+}
+
+/**
+ * History projection stores are allowed to keep a stable backing Map while the
+ * materialized Chat order and DOM grow. Treat either semantic or rendered
+ * growth as progress so a valid long jump is never stopped by a stale Map size.
+ */
+export function advanceJumpPagingProgress(progress, snapshot) {
+  const previous = progress ?? {};
+  const firstKey = snapshot?.firstKey ?? null;
+  const orderLength = Number.isFinite(snapshot?.orderLength)
+    ? Math.max(0, snapshot.orderLength)
+    : 0;
+  const anchorCount = Number.isFinite(snapshot?.anchorCount)
+    ? Math.max(0, snapshot.anchorCount)
+    : 0;
+  const advanced =
+    firstKey !== (previous.firstKey ?? null) ||
+    orderLength >
+      (Number.isFinite(previous.orderLength) ? previous.orderLength : 0) ||
+    anchorCount >
+      (Number.isFinite(previous.anchorCount) ? previous.anchorCount : 0);
+  return {
+    firstKey,
+    orderLength,
+    anchorCount,
+    stalls: advanced
+      ? 0
+      : Math.max(0, Number.isFinite(previous.stalls) ? previous.stalls : 0) + 1,
   };
 }
 
