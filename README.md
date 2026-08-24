@@ -12,8 +12,9 @@
 
 为 DeepSeek Harness Web 长会话提供一个低干扰的用户 Turn 导航轨道。它只标记真正改变会话方向的用户轮次，在正文旁提供完整历史索引、预览、搜索和可靠跳转；默认位于左侧，也可以完整镜像到右侧。
 
-## 0.5.0 更新重点
+## 0.5.1 更新重点
 
+- **修复时间线不显示**：兼容 DSH `0.1.1-rc.2` 的空会话启动顺序，在正文首次就绪时补挂载时间线，同时避免历史补页重建轨道状态。
 - **一次选择即可定位**：点击未加载轮次会自动连续补页、保护阅读锚点并校验最终落点，不再需要反复点击。
 - **边缘索引也是真实入口**：窗口外的两级视觉指引支持悬停预览、点击、键盘操作和邻近波动，不再只是装饰。
 - **动效有方向但不拖沓**：近距离平滑滚动，远距离快速抵达后用 180ms 收尾；滚轮连续操作可以从动画中途重新定向。
@@ -158,7 +159,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.0.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.1.tgz"
 dsh --profile web --dump-config
 ```
 

@@ -318,7 +318,7 @@ test("maps a stationary pointer to the fixed interactive rail slot", () => {
   assert.equal(railSlotAtPointer(120, trackTop, startOffset, gap, 0), null);
 });
 
-test("keeps a measurable rail for one loaded or unloaded favorite item", () => {
+test("renders before anchor measurement for one loaded or unloaded favorite item", () => {
   assert.equal(shouldRenderRailSurface(true, false, 1, false), true);
   assert.equal(shouldRenderRailSurface(true, true, 0, false), true);
   assert.equal(shouldRenderRailSurface(true, false, 0, true), true);

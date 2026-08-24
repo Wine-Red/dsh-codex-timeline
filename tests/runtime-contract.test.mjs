@@ -158,7 +158,7 @@ test("keeps viewport geometry when a filter has no materialized anchors", () => 
     "trackAnchors: (0, react.useCallback)((keys, keepViewport = false)",
     "keepViewportRef.current = keepViewport",
     "if (keepViewport) scheduleMeasure(true)",
-    "const shouldRenderRail = shouldRenderRailSurface(preferences.enabled, favoritesOnly, located.length, hasMore)",
+    "const shouldRenderRail = shouldRenderRailSurface(preferences.enabled, favoritesOnly, visibleItems.length, hasMore)",
     "trackAnchors([], false)",
     "if (!shouldRenderRail) return null",
   ]) {
@@ -167,6 +167,11 @@ test("keeps viewport geometry when a filter has no materialized anchors", () => 
   assert.match(
     client,
     /trackAnchors\(shouldRenderRail \? visibleItems\.flatMap[\s\S]*?, shouldRenderRail\)/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /shouldRenderRailSurface\(preferences\.enabled, favoritesOnly, located\.length/u,
+    "anchor measurement must not be required before the rail can register anchors",
   );
 });
 
@@ -232,16 +237,20 @@ test("coordinates adaptive jumps with DSH-style prepend anchoring and landing ve
   assert.doesNotMatch(client, /nodes\.size > progress\.lastNodeCount/u);
 });
 
-test("keeps the navigation portal mounted while history pages prepend", () => {
+test("mounts after an initially empty transcript without remounting on prepend", () => {
   const start = client.indexOf("function AdditiveTurnNavigation");
   const end = client.indexOf("function apply$1", start);
   const additive = client.slice(start, end);
   for (const value of [
     "const registeredAnchorsRef = (0, react.useRef)",
+    "const seatRef = (0, react.useRef)(null)",
+    "const ensureNavigationSeat = (0, react.useCallback)",
+    "if (column === null || list === null || root === null) return",
+    "ensureNavigationSeat();",
     "const syncNavigationAnchors = (0, react.useCallback)",
     "registeredAnchorsRef.current = next",
-    "}, [sessionId, navigation.registerAnchor])",
-    "}, [order, syncNavigationAnchors])",
+    "}, [ensureNavigationSeat, navigation.registerAnchor])",
+    "}, [order, ensureNavigationSeat, syncNavigationAnchors])",
   ]) {
     assert.ok(additive.includes(value), value);
   }

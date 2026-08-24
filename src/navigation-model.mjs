@@ -185,13 +185,13 @@ export function railSlotAtPointer(
 export function shouldRenderRailSurface(
   enabled,
   favoritesOnly,
-  locatedCount,
+  itemCount,
   hasMore,
 ) {
   return (
     enabled === true &&
     (favoritesOnly === true ||
-      (Number.isFinite(locatedCount) && locatedCount > 0) ||
+      (Number.isFinite(itemCount) && itemCount > 0) ||
       hasMore === true)
   );
 }

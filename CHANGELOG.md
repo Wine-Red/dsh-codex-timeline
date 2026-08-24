@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - 2026-08-24
+
+- Fix [#5](https://github.com/Wine-Red/dsh-codex-timeline/issues/5): render from projected Turn items before DOM-anchor measurement and retry the additive seat mount when DSH `0.1.1-rc.2` populates an initially empty Chat order. The 0.5.0 rail required `located.length > 0` before registering the anchors that make `located` non-empty, while its lifecycle optimization could also query `[data-chat-flow]` too early and never retry. The corrected startup path mounts the seat, renders from the Turn projection, then measures anchors in place; already-mounted rails still survive history prepends without losing jump, hover, or focus state.
+
 ## 0.5.0 - 2026-08-24
 
 - Raise the complete timeline navigation surface above transcript-local sticky layers, so marker previews and their actions remain visually on top of DSH code-block headers and bodies while still staying below drawers and global modals.
