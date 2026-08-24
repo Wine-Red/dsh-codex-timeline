@@ -21,23 +21,31 @@ A subtle user-Turn navigation rail for long DeepSeek Harness Web conversations. 
 
 ## Interface tour
 
-The two captures below come from the real browser surface of DSH `0.1.1-rc.2` and plugin `0.5.0`. To protect local conversations, the transcript, preview, metrics, and search semantics were replaced in the capture browser with dedicated documentation copy. A neutral dark surface removes any unrelated appearance plugin from the result.
+The four captures below come from the real browser surface of DSH `0.1.1-rc.2` and plugin `0.5.0`, using DSH's native light and dark themes. The capture browser removes the wallpaper layer, registered theme, and token overrides from `dsh-any-background`. To protect local conversations, the transcript, preview, metrics, and search semantics use dedicated documentation copy.
 
 ### Default: complete, but quiet
 
 The main index and both edge-guide levels remain low-contrast static dashes until activated. Search and favorites stay pinned above the track without reducing transcript width.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh.png" width="960" alt="The compact 0.5.0 timeline in DSH 0.1.1-rc.2, with search, favorites, and the complete static index" />
-</p>
+<table>
+  <thead><tr><th>Native DSH light</th><th>Native DSH dark</th></tr></thead>
+  <tbody><tr>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh.png" width="470" alt="The compact 0.5.0 timeline in DSH's native light theme, with search, favorites, and the complete static index" /></td>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh-dark.png" width="470" alt="The compact 0.5.0 timeline in DSH's native dark theme, with search, favorites, and the complete static index" /></td>
+  </tr></tbody>
+</table>
 
 ### Hover: preview, wave, and explicit depth
 
 The selected marker expands to 39px while its three neighbors form a 30 / 21 / 15px wave. The preview exposes position, status, performance metrics, two prompt lines, and two answer lines, and remains above sticky transcript surfaces.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh.png" width="960" alt="The hover-expanded 0.5.0 timeline in DSH 0.1.1-rc.2, showing the graded wave and top-layer preview" />
-</p>
+<table>
+  <thead><tr><th>Native DSH light</th><th>Native DSH dark</th></tr></thead>
+  <tbody><tr>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh.png" width="470" alt="The hover-expanded 0.5.0 timeline in DSH's native light theme, showing the graded wave and top-layer preview" /></td>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh-dark.png" width="470" alt="The hover-expanded 0.5.0 timeline in DSH's native dark theme, showing the graded wave and top-layer preview" /></td>
+  </tr></tbody>
+</table>
 
 ### Typical flow
 

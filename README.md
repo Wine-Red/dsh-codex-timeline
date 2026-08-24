@@ -21,23 +21,31 @@
 
 ## 界面预览
 
-下面两图来自 DSH `0.1.1-rc.2` 与本插件 `0.5.0` 的真实浏览器界面。为避免暴露本地会话，正文、预览、指标和搜索语义均在截图浏览器中替换为专用测试文案；中性深色底仅用于排除其他外观插件的影响。
+下面四图来自 DSH `0.1.1-rc.2` 与本插件 `0.5.0` 的真实浏览器界面，并分别使用 DSH 原生浅色、深色主题。截图浏览器中已移除 `dsh-any-background` 的壁纸层、主题注册和变量覆盖；为避免暴露本地会话，正文、预览、指标和搜索语义均替换为专用测试文案。
 
 ### 默认：完整但安静
 
 未激活时，主索引与两级边缘指引保持低对比度静态短横；搜索和收藏固定在轨道顶部，不挤占正文宽度。
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh.png" width="960" alt="DSH 0.1.1-rc.2 中的 0.5.0 默认时间线：搜索、收藏和完整静态索引" />
-</p>
+<table>
+  <thead><tr><th>DSH 原生浅色</th><th>DSH 原生深色</th></tr></thead>
+  <tbody><tr>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh.png" width="470" alt="DSH 原生浅色主题中的 0.5.0 默认时间线：搜索、收藏和完整静态索引" /></td>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-default-dsh-dark.png" width="470" alt="DSH 原生深色主题中的 0.5.0 默认时间线：搜索、收藏和完整静态索引" /></td>
+  </tr></tbody>
+</table>
 
 ### 悬停：预览、波动与明确层级
 
 选中标记扩展为 39px，邻近三条依次形成 30 / 21 / 15px 波动；预览显示轮次、状态、性能指标、两行提问与两行回答，并保持在代码块等正文表面之上。
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh.png" width="960" alt="DSH 0.1.1-rc.2 中的 0.5.0 悬停时间线：分级波动和顶层预览卡" />
-</p>
+<table>
+  <thead><tr><th>DSH 原生浅色</th><th>DSH 原生深色</th></tr></thead>
+  <tbody><tr>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh.png" width="470" alt="DSH 原生浅色主题中的 0.5.0 悬停时间线：分级波动和顶层预览卡" /></td>
+    <td><img src="https://raw.githubusercontent.com/Wine-Red/dsh-codex-timeline/main/docs/images/timeline-hover-dsh-dark.png" width="470" alt="DSH 原生深色主题中的 0.5.0 悬停时间线：分级波动和顶层预览卡" /></td>
+  </tr></tbody>
+</table>
 
 ### 使用路径
 
