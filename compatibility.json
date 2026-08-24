@@ -17,6 +17,6 @@
     "domAnchors": ["data-chat-flow", "data-chat-anchor-key"],
     "messageImagesSlot": "conversation.message.images",
     "styleCorpusSha256": "645a109559d539c3622cb3c7b291f16e17a4b0cc51629377903f70e0e7c11519",
-    "artifactSha256": "b7e83e90ee5c94012f9a4a208c70e35524f993d53a69c87af850cc58ab30c1be"
+    "artifactSha256": "1fbede2339b4308b40bc25621009814e4206c8d92097c84c07a57a88cc5db6d0"
   }
 }

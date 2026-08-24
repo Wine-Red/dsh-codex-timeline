@@ -12,6 +12,10 @@ English | [中文](README.md)
 
 A subtle user-Turn navigation rail for long DeepSeek Harness Web conversations. It marks only the prompts that actually steer the session, then adds a complete history index, previews, search, and reliable jumps beside the transcript. It defaults to the left and can be mirrored completely to the right.
 
+## What's new in 0.5.3
+
+- **The loading notice moved to the conversation's bottom-left corner**: the paging progress shown after clicking a marker no longer hangs under the rail controls, and narrow screens no longer use a fixed top-center banner. Wording, the 300ms delay, page counters, error color, and the screen-reader announcement are unchanged, and right-side rails keep the same bottom-left corner.
+
 ## What's new in 0.5.2
 
 - **A quieter, more natural arrival cue**: successful jumps no longer draw a high-contrast outline. The target user bubble now flashes once with a short pulse derived from DSH's semantic theme color across light, dark, and colored themes.
@@ -126,7 +130,7 @@ Restart DSH Web to return to the built-in Conversation UI.
 ### Reliable jumps
 
 - Nearby materialized targets scroll smoothly. Distant targets arrive at most 88px before the destination, then finish with a 180ms ease-out.
-- Unloaded markers and complete-session search results share DSH's official history loader. Paging is single-flight, with lightweight page progress appearing only after 300ms.
+- Unloaded markers and complete-session search results share DSH's official history loader. Paging is single-flight, with lightweight page progress appearing in the conversation's bottom-left corner only after 300ms.
 - Before each prepend, the plugin captures the first visible semantic row and exact pixel offset. If the reader moves during loading, that anchor follows the reader and is restored after layout.
 - Landing is verified and corrected to within 2px, then confirmed by an 800ms theme-aware outline. Wheel, touch, or a new selection immediately cancels stale work.
 - Progress combines Chat order, the first materialized node, and registered DOM-anchor growth, avoiding false stalls when the Host projection Map stays stable.
@@ -161,7 +165,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.2.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.3.tgz"
 dsh --profile web --dump-config
 ```
 

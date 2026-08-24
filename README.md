@@ -12,6 +12,10 @@
 
 为 DeepSeek Harness Web 长会话提供一个低干扰的用户 Turn 导航轨道。它只标记真正改变会话方向的用户轮次，在正文旁提供完整历史索引、预览、搜索和可靠跳转；默认位于左侧，也可以完整镜像到右侧。
 
+## 0.5.3 更新重点
+
+- **加载提示移到会话区域左下角**：点击导航轨道后出现的补页进度提示不再挂在轨道控件下方，窄屏也不再使用顶部居中横幅；文案、300ms 延迟、页数、错误配色和读屏播报保持不变，轨道显示在右侧时同样停靠左下角。
+
 ## 0.5.2 更新重点
 
 - **落点提示更轻、更自然**：定位成功后不再绘制高对比度外框，改为目标用户气泡进行一次短暂的主题色闪烁；浅色、深色与彩色主题均沿用 DSH 自身的语义颜色。
@@ -126,7 +130,7 @@ powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
 ### 可靠跳转
 
 - 已加载且距离较近的目标使用短距离平滑滚动；远距离目标先快速抵达前方最多 88px，再以 180ms ease-out 收尾。
-- 未加载索引和完整会话搜索结果共用 DSH 正式分页流程；整个过程单路执行，超过 300ms 才显示轻量页数进度。
+- 未加载索引和完整会话搜索结果共用 DSH 正式分页流程；整个过程单路执行，超过 300ms 才在会话区域左下角显示轻量页数进度。
 - 每次 prepend 前记录首个可见语义行和像素偏移；加载期间如果继续阅读，锚点会随用户更新，DOM 提交后再恢复。
 - 到位后校验并微调到 2px 内，以 800ms 主题色描边确认目标；滚轮、触摸或新选择会立即取消旧跳转。
 - 分页以 Chat 顺序、首节点和已注册 DOM 锚点共同判断进展，避免宿主投影 Map 不增长时误判停滞。
@@ -161,7 +165,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.2.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.3.tgz"
 dsh --profile web --dump-config
 ```
 

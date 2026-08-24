@@ -235,6 +235,8 @@ test("coordinates adaptive jumps with DSH-style prepend anchoring and landing ve
     "const jumpNoticeTimerRef = (0, react.useRef)(null)",
     "}, 300)",
     'className: "RhpIHW_jumpNotice"',
+    ".RhpIHW_jumpNotice{position:absolute;z-index:7;top:auto;bottom:12px;left:12px",
+    ".RhpIHW_host[data-turn-nav-side=right]>.RhpIHW_jumpNotice{left:12px;right:auto}",
     '"timeline.jump.loadingProgress"',
     '"timeline.jump.landed"',
     '"timeline.jump.failed"',
@@ -245,6 +247,11 @@ test("coordinates adaptive jumps with DSH-style prepend anchoring and landing ve
   assert.doesNotMatch(client, /setPendingJumpId/u);
   assert.doesNotMatch(client, /gave up after 30 pages/u);
   assert.doesNotMatch(client, /nodes\.size > progress\.lastNodeCount/u);
+  assert.doesNotMatch(
+    client,
+    /\.RhpIHW_jumpNotice\{position:fixed;top:48px/u,
+    "the jump notice must dock at the conversation bottom-left instead of the top center",
+  );
   assert.doesNotMatch(
     client,
     /data-dsh-codex-timeline-landed=true\]\{outline:2px/u,

@@ -177,6 +177,8 @@ for (const required of [
   '"aria-live": "polite"',
   "const jumpNoticeTimerRef = (0, react.useRef)(null)",
   'className: "RhpIHW_jumpNotice"',
+  ".RhpIHW_jumpNotice{position:absolute;z-index:7;top:auto;bottom:12px;left:12px",
+  ".RhpIHW_host[data-turn-nav-side=right]>.RhpIHW_jumpNotice{left:12px;right:auto}",
   '"timeline.jump.loadingProgress"',
   "jumpRequest.pages >= 400",
   "progress.stalls >= 5",
@@ -232,6 +234,7 @@ for (const forbidden of [
   "items.length < 3 && !hasMore",
   "outline:2px solid color-mix(in srgb,var(--dsw-alias-brand-primary) 82%,transparent)",
   "[data-chat-anchor-key][data-dsh-codex-timeline-landed=true]",
+  ".RhpIHW_jumpNotice{position:fixed;top:48px",
   "E:\\Program",
   "C:\\Users",
 ]) {

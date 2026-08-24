@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 - 2026-08-25
+
+- Dock the jump progress notice to the bottom-left corner of the conversation area instead of hanging it directly under the rail controls, and drop the fixed top-center banner used on narrow screens. Timing, wording, page counters, error color, and the screen-reader announcement are unchanged; right-side mode keeps the same bottom-left corner so the notice never covers the transcript or the rail.
+
 ## 0.5.2 - 2026-08-25
 
 - Address [#6](https://github.com/Wine-Red/dsh-codex-timeline/issues/6): replace the high-contrast post-jump outline with one 640 ms pulse inside the target user bubble. The pulse derives its tint from DSH's semantic brand token so light, dark, and colored themes keep their own palette; it causes no layout shift, does not block interaction, and stands down for reduced-motion and forced-color users while the existing screen-reader announcement remains available.
