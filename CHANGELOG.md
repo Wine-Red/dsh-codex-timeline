@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4 - 2026-08-27
+
+- Fix [#8](https://github.com/Wine-Red/dsh-codex-timeline/issues/8): remount the additive timeline bridge when DSH replaces the active Chat view during tab changes. A filtered, animation-frame-coalesced DOM lifecycle observer now disconnects the stale seat, anchors, listeners, and geometry observers when leaving Chat, then binds a fresh Portal to the replacement `[data-chat-flow]` when returning without requiring a Session switch.
+
 ## 0.5.3 - 2026-08-25
 
 - Dock the jump progress notice to the bottom-left corner of the conversation area instead of hanging it directly under the rail controls, and drop the fixed top-center banner used on narrow screens. Timing, wording, page counters, error color, and the screen-reader announcement are unchanged; right-side mode keeps the same bottom-left corner so the notice never covers the transcript or the rail.

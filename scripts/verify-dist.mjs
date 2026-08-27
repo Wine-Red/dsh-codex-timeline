@@ -103,6 +103,9 @@ for (const required of [
   "--turn-nav-center",
   "/codex-timeline/settings",
   "function AdditiveTurnNavigation",
+  "function MountedAdditiveTurnNavigation",
+  "function mutationTouchesChatFlow",
+  "new MutationObserver((records) =>",
   'document.querySelector("[data-chat-flow]")',
   'querySelectorAll("[data-chat-anchor-key]")',
   "react_dom.createPortal",
@@ -229,7 +232,6 @@ if (
   fail("rail must use complete edge previews without clipping the tooltip");
 }
 for (const forbidden of [
-  "MutationObserver",
   "monkey patch",
   "items.length < 3 && !hasMore",
   "outline:2px solid color-mix(in srgb,var(--dsw-alias-brand-primary) 82%,transparent)",

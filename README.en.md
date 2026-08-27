@@ -12,20 +12,6 @@ English | [中文](README.md)
 
 A subtle user-Turn navigation rail for long DeepSeek Harness Web conversations. It marks only the prompts that actually steer the session, then adds a complete history index, previews, search, and reliable jumps beside the transcript. It defaults to the left and can be mirrored completely to the right.
 
-## What's new in 0.5.3
-
-- **The loading notice moved to the conversation's bottom-left corner**: the paging progress shown after clicking a marker no longer hangs under the rail controls, and narrow screens no longer use a fixed top-center banner. Wording, the 300ms delay, page counters, error color, and the screen-reader announcement are unchanged, and right-side rails keep the same bottom-left corner.
-
-## What's new in 0.5.2
-
-- **A quieter, more natural arrival cue**: successful jumps no longer draw a high-contrast outline. The target user bubble now flashes once with a short pulse derived from DSH's semantic theme color across light, dark, and colored themes.
-- **The flash is independently optional**: Settings → Plugins → Plugin configuration now includes a default-on **Flash after jump** switch. Turning it off leaves navigation, landing verification, and screen-reader announcements unchanged.
-- **Restore timeline mounting**: support DSH `0.1.1-rc.2`'s empty-session startup order by attaching the timeline when the transcript first becomes ready, without rebuilding rail state during history prepends.
-- **One selection really lands**: an unloaded Turn automatically chains the required history pages, protects the reading anchor, and verifies the final position.
-- **Edge guides are real targets**: both graded levels support hover previews, click, keyboard input, and the neighboring wave instead of acting as decoration.
-- **Motion shows direction without wasting time**: nearby targets scroll smoothly; distant targets arrive immediately and finish with a 180ms directional settle. Rapid wheel input retargets the current animation.
-- **A cleaner, dependable surface**: the redundant desktop paging ellipsis is gone, and preview cards stay above transcript tables and sticky code blocks.
-
 ## Interface tour
 
 The four captures below come from the real browser surface of DSH `0.1.1-rc.2` and plugin `0.5.0`, using DSH's native light and dark themes. The capture browser removes the wallpaper layer, registered theme, and token overrides from `dsh-any-background`. To protect local conversations, the transcript, preview, metrics, and search semantics use dedicated documentation copy.
@@ -165,7 +151,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.3.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.4.tgz"
 dsh --profile web --dump-config
 ```
 

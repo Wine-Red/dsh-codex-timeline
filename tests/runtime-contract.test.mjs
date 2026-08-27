@@ -74,6 +74,23 @@ return { accumulateRailWheel, advanceJumpPagingProgress, classifyRailMotion, der
 })()`);
 }
 
+function additiveMountWrapper(context) {
+  const start = client.indexOf("\t\tfunction mutationTouchesChatFlow");
+  const end = client.indexOf(
+    "\t\tfunction MountedAdditiveTurnNavigation",
+    start,
+  );
+  assert.ok(start >= 0 && end > start, "additive mount wrapper is extractable");
+  const block = client.slice(start, end);
+  return runInNewContext(
+    `(() => {
+${block}
+return AdditiveTurnNavigation;
+})()`,
+    context,
+  );
+}
+
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 test("ships a syntactically valid client bundle", () => {
@@ -147,8 +164,8 @@ test("uses the official lifecycle seat and stable chat anchors", () => {
 test("uses observer-backed geometry and cleans up scheduled work", () => {
   assert.match(client, /new IntersectionObserver/u);
   assert.match(client, /new ResizeObserver/u);
+  assert.match(client, /new MutationObserver/u);
   assert.match(client, /cancelAnimationFrame/u);
-  assert.doesNotMatch(client, /MutationObserver/u);
 });
 
 test("keeps viewport geometry when a filter has no materialized anchors", () => {
@@ -299,6 +316,162 @@ test("mounts after an initially empty transcript without remounting on prepend",
     /sessionId,\s*order,\s*navigation\.registerAnchor/u,
     "order changes must update anchors without remounting the portal",
   );
+});
+
+test("remounts the additive timeline when the host replaces the chat flow", () => {
+  const hooks = [];
+  let hookIndex = 0;
+  let pendingEffects = [];
+  let renderPending = false;
+  let currentFlow = null;
+  let observer;
+  let nextFrame = 1;
+  const frames = new Map();
+
+  const react = {
+    useRef(initial) {
+      const index = hookIndex++;
+      hooks[index] ??= { kind: "ref", value: { current: initial } };
+      return hooks[index].value;
+    },
+    useState(initial) {
+      const index = hookIndex++;
+      hooks[index] ??= {
+        kind: "state",
+        value: typeof initial === "function" ? initial() : initial,
+      };
+      const setValue = (next) => {
+        hooks[index].value =
+          typeof next === "function" ? next(hooks[index].value) : next;
+        renderPending = true;
+      };
+      return [hooks[index].value, setValue];
+    },
+    useLayoutEffect(effect, dependencies) {
+      const index = hookIndex++;
+      const previous = hooks[index];
+      const changed =
+        previous === undefined ||
+        dependencies.some(
+          (value, offset) => value !== previous.dependencies[offset],
+        );
+      if (!changed) return;
+      pendingEffects.push(() => {
+        previous?.cleanup?.();
+        hooks[index] = {
+          kind: "effect",
+          dependencies,
+          cleanup: effect(),
+        };
+      });
+    },
+  };
+  class TestMutationObserver {
+    constructor(callback) {
+      this.callback = callback;
+      this.disconnected = false;
+      observer = this;
+    }
+    observe(root, options) {
+      this.root = root;
+      this.options = options;
+    }
+    disconnect() {
+      this.disconnected = true;
+    }
+  }
+  const requestAnimationFrame = (callback) => {
+    const id = nextFrame++;
+    frames.set(id, callback);
+    return id;
+  };
+  const cancelAnimationFrame = (id) => frames.delete(id);
+  const document = {
+    body: {},
+    querySelector: () => currentFlow,
+  };
+  const mountedComponent = () => undefined;
+  const AdditiveTurnNavigation = additiveMountWrapper({
+    MutationObserver: TestMutationObserver,
+    MountedAdditiveTurnNavigation: mountedComponent,
+    cancelAnimationFrame,
+    document,
+    react,
+    react_jsx_runtime: {
+      jsx: (type, props, key) => ({ key, props, type }),
+    },
+    requestAnimationFrame,
+  });
+  const props = { sessionId: "session-1" };
+  const flow = (name) => ({
+    isConnected: true,
+    name,
+    nodeType: 1,
+    matches: (selector) => selector === "[data-chat-flow]",
+    querySelector: () => null,
+  });
+  const render = () => {
+    hookIndex = 0;
+    pendingEffects = [];
+    renderPending = false;
+    const output = AdditiveTurnNavigation(props);
+    for (const effect of pendingEffects) effect();
+    return output;
+  };
+  const settleRender = () => {
+    let output = render();
+    while (renderPending) output = render();
+    return output;
+  };
+  const flushFrame = () => {
+    const callbacks = [...frames.values()];
+    frames.clear();
+    for (const callback of callbacks) callback();
+  };
+
+  const firstFlow = flow("first");
+  currentFlow = firstFlow;
+  let output = settleRender();
+  assert.equal(output.type, mountedComponent);
+  assert.equal(output.key, 1);
+  assert.equal(observer.root, document.body);
+  assert.deepEqual(plain(observer.options), { childList: true, subtree: true });
+
+  const unrelated = {
+    nodeType: 1,
+    matches: () => false,
+    querySelector: () => null,
+  };
+  observer.callback([{ addedNodes: [unrelated], removedNodes: [] }]);
+  assert.equal(frames.size, 0, "unrelated mutations do not scan the document");
+
+  firstFlow.isConnected = false;
+  currentFlow = null;
+  observer.callback([{ addedNodes: [], removedNodes: [unrelated] }]);
+  observer.callback([{ addedNodes: [], removedNodes: [unrelated] }]);
+  assert.equal(frames.size, 1, "flow checks are coalesced to one frame");
+  flushFrame();
+  output = settleRender();
+  assert.equal(
+    output,
+    null,
+    "the detached bridge is unmounted off the chat tab",
+  );
+
+  const secondFlow = flow("second");
+  currentFlow = secondFlow;
+  observer.callback([{ addedNodes: [secondFlow], removedNodes: [] }]);
+  flushFrame();
+  output = settleRender();
+  assert.equal(output.type, mountedComponent);
+  assert.equal(output.key, 3);
+
+  secondFlow.isConnected = false;
+  observer.callback([{ addedNodes: [], removedNodes: [secondFlow] }]);
+  assert.equal(frames.size, 1);
+  hooks[3].cleanup();
+  assert.equal(observer.disconnected, true);
+  assert.equal(frames.size, 0, "pending flow checks are cancelled on cleanup");
 });
 
 test("removed auto-load-all and made the recent-turns count a setting", () => {
