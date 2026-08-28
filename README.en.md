@@ -151,7 +151,7 @@ pnpm pack --pack-destination artifacts
 Validate a local tarball against a profile:
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.4.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.5.tgz"
 dsh --profile web --dump-config
 ```
 

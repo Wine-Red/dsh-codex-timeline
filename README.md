@@ -151,7 +151,7 @@ pnpm pack --pack-destination artifacts
 安装本地 tarball做 profile 契约验证：
 
 ```powershell
-dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.4.tgz"
+dsh plugin --profile web add ".\artifacts\dsh-codex-timeline-0.5.5.tgz"
 dsh --profile web --dump-config
 ```
 

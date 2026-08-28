@@ -67,6 +67,10 @@ test("declares the verified 0.1.1-rc.2 compatibility window", () => {
   );
 });
 
+test("accepts the verified ReactDOM 18 runtime and compatible ReactDOM 19 hosts", () => {
+  assert.equal(manifest.peerDependencies["react-dom"], "^18.3.1 || ^19.0.0");
+});
+
 test("installer accepts only the verified DSH version", () => {
   assert.match(
     installer,

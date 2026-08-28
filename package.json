@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-timeline",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Codex-style turn timeline and local conversation search for DeepSeek Harness Web",
   "homepage": "https://github.com/Wine-Red/dsh-codex-timeline#readme",
   "repository": {
@@ -121,7 +121,7 @@
     "@deepseek-ai/dsh-token-meter": "^0.1.1-rc.2",
     "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "^18.3.1 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-agent": {

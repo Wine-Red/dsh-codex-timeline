@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5 - 2026-08-28
+
+- Accept ReactDOM 19 hosts in the peer dependency declaration while retaining ReactDOM 18.3.1 compatibility, avoiding a false setup warning in newer DSH Web environments.
+
 ## 0.5.4 - 2026-08-27
 
 - Fix [#8](https://github.com/Wine-Red/dsh-codex-timeline/issues/8): remount the additive timeline bridge when DSH replaces the active Chat view during tab changes. A filtered, animation-frame-coalesced DOM lifecycle observer now disconnects the stale seat, anchors, listeners, and geometry observers when leaving Chat, then binds a fresh Portal to the replacement `[data-chat-flow]` when returning without requiring a Session switch.
