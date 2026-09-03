@@ -2,922 +2,330 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { Script, runInNewContext } from "node:vm";
-import {
-  advanceJumpPagingProgress as sourceAdvanceJumpPagingProgress,
-  accumulateRailWheel as sourceAccumulateRailWheel,
-  classifyRailMotion as sourceClassifyRailMotion,
-  deriveRailBand as sourceDeriveRailBand,
-  deriveRailGeometry as sourceDeriveRailGeometry,
-  deriveRailWindow as sourceDeriveRailWindow,
-  railSlotAtPointer as sourceRailSlotAtPointer,
-  railWindowStartForIndex as sourceRailWindowStartForIndex,
-  resolveJumpBehavior as sourceResolveJumpBehavior,
-  resolveJumpSettle as sourceResolveJumpSettle,
-  resolveRailWheel as sourceResolveRailWheel,
-  shouldRenderRailSurface as sourceShouldRenderRailSurface,
-  stepRailWindow as sourceStepRailWindow,
-} from "../src/navigation-model.mjs";
 
 const client = await readFile(
   new URL("../lib/client.js", import.meta.url),
   "utf8",
 );
 
-function clientFactory() {
+function clientHandoff(context = {}) {
   let handoff;
-  runInNewContext(client, {
-    console,
-    fetch: async () => ({ json: async () => ({ ok: true, value: {} }) }),
-    queueMicrotask,
-    window: {
-      __ModuleLoader__: {
-        load(value) {
-          handoff = value;
-        },
-      },
+  const window = context.window ?? {};
+  window.__ModuleLoader__ = {
+    load(value) {
+      handoff = value;
     },
-  });
-  return handoff.factory;
-}
-
-function universalModuleStub() {
-  const callable = function () {
-    return proxy;
   };
-  const proxy = new Proxy(callable, {
-    apply() {
-      return proxy;
-    },
-    construct() {
-      return proxy;
-    },
-    get(target, property) {
-      if (property === "prototype") return target.prototype;
-      if (property === Symbol.iterator)
-        return function* iterator() {
-          return undefined;
-        };
-      return proxy;
-    },
+  runInNewContext(client, {
+    ...context,
+    window,
   });
-  return proxy;
+  return handoff;
 }
 
-function bundledRailModel() {
-  const start = client.indexOf("\t\tconst RAIL_WINDOW_DEFAULT");
-  const end = client.indexOf("\t\tfunction positionLabel", start);
-  assert.ok(start >= 0 && end > start, "bundled rail helpers are extractable");
-  const block = client.slice(start, end);
-  return runInNewContext(`(() => {
-${block}
-return { accumulateRailWheel, advanceJumpPagingProgress, classifyRailMotion, deriveRailBand, deriveRailGeometry, deriveRailWindow, railSlotAtPointer, railWindowStartForIndex, resolveJumpBehavior, resolveJumpSettle, resolveRailWheel, shouldRenderRailSurface, stepRailWindow };
-})()`);
+function clientPlugin(context = {}) {
+  const handoff = clientHandoff(context);
+  return handoff.factory((id) => {
+    if (id === "react") return {};
+    if (id === "react/jsx-runtime") return {};
+    throw new Error(`unexpected runtime dependency: ${id}`);
+  });
 }
 
-function additiveMountWrapper(context) {
-  const start = client.indexOf("\t\tfunction mutationTouchesChatFlow");
-  const end = client.indexOf(
-    "\t\tfunction MountedAdditiveTurnNavigation",
-    start,
-  );
-  assert.ok(start >= 0 && end > start, "additive mount wrapper is extractable");
-  const block = client.slice(start, end);
-  return runInNewContext(
-    `(() => {
-${block}
-return AdditiveTurnNavigation;
-})()`,
-    context,
-  );
+function browserContext() {
+  return {
+    console,
+    document: {
+      body: null,
+      head: { appendChild() {} },
+      querySelector: () => null,
+      createElement: () => ({ dataset: {}, textContent: "" }),
+    },
+    fetch: async () => ({
+      ok: true,
+      json: async () => ({ ok: true, value: {} }),
+    }),
+    location: { origin: "http://dsh.internal" },
+    URL,
+  };
 }
 
-const plain = (value) => JSON.parse(JSON.stringify(value));
-
-test("ships a syntactically valid client bundle", () => {
+test("ships a syntactically valid DSH browser module", () => {
   assert.doesNotThrow(() => new Script(client, { filename: "lib/client.js" }));
+  const handoff = clientHandoff();
+  assert.equal(handoff.id, "dsh-codex-timeline");
+  assert.equal(typeof handoff.factory, "function");
 });
 
-test("hands the expected module factory to the DSH loader", () => {
-  let handoff;
-  runInNewContext(client, {
-    window: {
-      __ModuleLoader__: {
-        load(value) {
-          handoff = value;
-        },
+test("is an enhancer instead of a second Conversation or navigation rail", () => {
+  for (const removed of [
+    "AdditiveTurnNavigation",
+    "MountedAdditiveTurnNavigation",
+    "LegacyImageGallery",
+    "createChatStore",
+    "createPortal",
+    "snapshot.chat",
+    '"conversation.chat.navigation"',
+    "ui-conversation/src",
+    "ui-turn-navigation/src",
+  ]) {
+    assert.ok(!client.includes(removed), removed);
+  }
+  assert.match(client, /function officialNavigator\(\)/u);
+  assert.match(
+    client,
+    /function enhanceOfficialNavigator\(preferences, favoritesOnly, items\)/u,
+  );
+  assert.match(client, /data-chat-flow/u);
+  assert.match(client, /data-dsh-navigation-enhanced/u);
+});
+
+test("uses alpha3 public session actions for paging and branching", () => {
+  assert.match(client, /session\.loadThrough\(seq\)/u);
+  assert.match(
+    client,
+    /ctx\.sessions\.fork\(\{ sessionId, atSeq: seq, increaseTitle: true \}\)/u,
+  );
+  assert.match(client, /ctx\.sessions\.open\(childId\)/u);
+  assert.doesNotMatch(client, /loadOlder\(/u);
+});
+
+test("keeps search, favorites, and branch actions keyboard reachable", () => {
+  for (const marker of [
+    "fetchTurnIndex",
+    'type: "search"',
+    'type: "button"',
+    '"aria-expanded": searchExpanded',
+    '"aria-pressed": favorite',
+    '"aria-pressed": favoritesOnly',
+    'role: "dialog"',
+    'role: "alert"',
+    'role: "status"',
+    '"aria-live": "polite"',
+    'event.key === "Escape"',
+    "favoritesOnly",
+    "branchSeq",
+  ]) {
+    assert.ok(client.includes(marker), marker);
+  }
+  assert.match(client, /No matches\. Try a shorter or different query\./u);
+  assert.match(client, /没有匹配结果，请尝试更短或不同的关键词。/u);
+  assert.match(client, /Could not branch from turn \{turn\}/u);
+});
+
+test("keeps corner controls and restores the rich interactive Turn preview", () => {
+  for (const marker of [
+    '"action.search"',
+    '"action.favorites"',
+    'className: "dsh-navx-preview"',
+    "preview.runTime",
+    "preview.ttft",
+    "preview.tokensPerSecond",
+    "preview.tokens",
+    "useOfficialPreview",
+    'role: "dialog"',
+    "onBranch",
+    "onFavorite",
+    'className: "dsh-navx-previewInlineActions"',
+    'className: "dsh-navx-previewInlineButton"',
+    'className: "dsh-navx-previewStats"',
+    "dshNavxStep",
+    "dshNavigationInteracting",
+  ]) {
+    assert.ok(client.includes(marker), marker);
+  }
+  assert.match(client, /\.dsh-navx-root\{[^}]*position:fixed/u);
+  assert.match(client, /\.dsh-navx-root\{[^}]*width:24px/u);
+  assert.match(client, /\.dsh-navx-trigger\{[^}]*width:24px;height:24px/u);
+  assert.match(client, /\.dsh-navx-trigger svg\{width:14px;height:14px/u);
+  assert.match(client, /data-ready/u);
+  assert.match(client, /data-side/u);
+  assert.match(client, /dshNavxPreview/u);
+  assert.match(client, /background:transparent/u);
+  assert.match(client, /dshNavigationFilter/u);
+  assert.doesNotMatch(client, /dsh-navx-badge/u);
+  assert.doesNotMatch(client, /dsh-navx-previewActions/u);
+  assert.doesNotMatch(client, /dsh-navx-previewMetrics/u);
+  assert.doesNotMatch(client, /className: "dsh-navx-filter"/u);
+  assert.match(client, /const edgeInset = 4/u);
+  assert.match(client, /const controlSize = coarse \? 44 : 24/u);
+  assert.match(
+    client,
+    /viewport\.left \+ scrollport\.clientWidth - controlSize - edgeInset/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /const measuredNav = nav\?\.getBoundingClientRect/u,
+  );
+  assert.doesNotMatch(
+    client,
+    /const measuredSlot = nav\?\.parentElement\?\.getBoundingClientRect/u,
+  );
+  for (const [step, width] of [
+    ["0", "30"],
+    ["1", "24"],
+    ["2", "18"],
+    ["3", "12"],
+  ]) {
+    assert.ok(
+      client.includes(
+        `button[data-dsh-navx-step="${step}"]::before{width:${width}px!important`,
+      ),
+    );
+  }
+  assert.match(client, /Math\.abs\(index - activeIndex\)/u);
+  assert.match(
+    client,
+    /nav\[data-dsh-navigation-enhanced=true\]\{width:36px;/u,
+  );
+  assert.match(
+    client,
+    /button\[data-dsh-navx-mark=true\]::before\{width:8px!important;background:var\(--dsw-alias-border-l4\)!important;opacity:\.55!important;transition:width \.18s[^}]*background-color \.16s[^}]*opacity \.16s/u,
+  );
+  assert.match(
+    client,
+    /:not\(\[data-dsh-navigation-interacting=true\]\) button\[aria-current=true\]::before\{background:var\(--dsw-alias-label-primary\)!important;opacity:\.72!important\}/u,
+  );
+  assert.doesNotMatch(client, /dsh-navx-peak-in/u);
+  assert.doesNotMatch(client, /dshNavxFormerPeak/u);
+  assert.doesNotMatch(
+    client,
+    /aria-current=true[^}]*transition:none!important/u,
+  );
+  assert.match(client, /let lastPointerY = null/u);
+  assert.match(client, /const syncPointerToTrack = \(\) =>/u);
+  assert.match(client, /nav\.addEventListener\("wheel", wheel/u);
+  assert.doesNotMatch(client, /nav === null \|\| items\.length === 0/u);
+  assert.match(client, /const itemByButton = new Map\(allButtons\.map/u);
+  assert.match(client, /const buttons = allButtons\.filter/u);
+  assert.doesNotMatch(client, /dsh-navx-highlight/u);
+  assert.doesNotMatch(client, /positionHighlight/u);
+  assert.match(
+    client,
+    /button\[data-dsh-navx-step="0"\]::before\{[^}]*background:var\(--dsw-alias-label-primary\)!important;opacity:\.9!important/u,
+  );
+});
+
+test("preserves all personalized navigation settings", () => {
+  for (const key of [
+    "enabled",
+    "favorites",
+    "side",
+    "leftOffset",
+    "centerOffset",
+    "markerSpacing",
+    "recentTurns",
+  ]) {
+    assert.match(client, new RegExp(`\\b${key}\\b`, "u"), key);
+  }
+  assert.match(client, /restoreOfficialNavigator/u);
+  assert.match(client, /--turn-natural-position/u);
+  assert.match(client, /--turn-natural-height/u);
+  assert.match(client, /prefers-reduced-motion/u);
+  assert.doesNotMatch(
+    client,
+    /landingFlash|dsh-nav-enhancer-landed|flashTurnRow/u,
+  );
+});
+
+test("keeps the standalone disclosure card and live slider controls", () => {
+  for (const marker of [
+    'jsxs("li", { className: "dsh-navx-settingsCard"',
+    '"aria-expanded": open',
+    'role: "switch"',
+    'type: "range"',
+    "htmlFor: inputId",
+    "settings.overridden",
+    "settings.reset",
+  ]) {
+    assert.ok(client.includes(marker), marker);
+  }
+  assert.doesNotMatch(client, /type: "number"/u);
+  assert.match(client, /onInput: updateDraft/u);
+  assert.match(client, /onPointerUp: commit/u);
+  assert.match(client, /onKeyUp: commit/u);
+  assert.match(client, /requestAnimationFrame/u);
+  assert.match(client, /previewOfficialRangePreference/u);
+  assert.doesNotMatch(client, /onChange: \(event\) => setPreference/u);
+});
+
+test("mirrors official marks and previews with the selected edge", () => {
+  assert.match(client, /data-dsh-navigation-side=left/u);
+  assert.match(client, /data-dsh-navigation-side=right/u);
+  assert.match(client, /data-dsh-navx-mark=true/u);
+  assert.match(client, /\[role=tooltip\]/u);
+  assert.match(client, /inset:0 auto 0 0/u);
+  assert.match(client, /inset:0 0 0 auto/u);
+  assert.match(client, /mark\.dataset\.dshNavxMark = "true"/u);
+});
+
+test("disabling enhancements leaves restored official geometry intact", () => {
+  assert.match(client, /if \(!owned\) return;/u);
+  assert.match(client, /if \(preferences\.enabled !== true\) return nav;/u);
+  assert.doesNotMatch(
+    client,
+    /if \(preferences\.enabled !== true\) \{\s*restoreOfficialNavigator/u,
+  );
+});
+
+test("registers only the settings card and header enhancement slots", async () => {
+  const plugin = clientPlugin(browserContext());
+  const registrations = [];
+  const errors = [];
+  const ctx = {
+    locale: { register: () => () => undefined },
+    logger: { error: (message) => errors.push(message) },
+    effect: (install) => install(),
+    slots: {
+      inject: (_name, install) => install(),
+      register: (spec, component) => {
+        registrations.push({ spec, component });
+        return () => undefined;
       },
     },
-  });
-  assert.equal(handoff?.id, "dsh-codex-timeline");
-  assert.equal(typeof handoff?.factory, "function");
+    sessions: {},
+  };
+
+  plugin.apply(ctx);
+  await Promise.resolve();
+
+  assert.deepEqual(
+    registrations.map(({ spec }) => spec.name),
+    ["settings.plugin.item", "conversation.session.header.actions"],
+  );
+  assert.deepEqual(errors, []);
 });
 
-test("an additive slot conflict fails open during real apply", async () => {
-  const stub = universalModuleStub();
-  const plugin = clientFactory()(() => stub);
-  const warnings = [];
+test("isolates an unavailable optional slot without blocking the other", async () => {
+  const handoff = clientHandoff(browserContext());
+  const plugin = handoff.factory((id) => {
+    if (id === "react") return {};
+    if (id === "react/jsx-runtime") return {};
+    throw new Error(id);
+  });
   const errors = [];
   let registrations = 0;
   const ctx = {
-    conversationEvents: { entries: () => [{}] },
-    conversationViews: { entries: () => [] },
-    get: () => ({}),
     locale: { register: () => () => undefined },
-    logger: {
-      error: (message) => errors.push(message),
-      warn: (message) => warnings.push(message),
-    },
+    logger: { error: (message) => errors.push(message) },
     effect: (install) => install(),
     slots: {
       inject: (_name, install) => install(),
       register: () => {
         registrations += 1;
-        if (registrations === 1) throw new Error("simulated slot conflict");
+        if (registrations === 1) throw new Error("simulated conflict");
         return () => undefined;
       },
-      snapshot: () => [{ kind: "single", scope: "session" }],
-      spec: () => ({ kind: "single", scope: "session" }),
     },
+    sessions: {},
   };
 
   assert.doesNotThrow(() => plugin.apply(ctx));
   await Promise.resolve();
-  assert.equal(registrations, 2, JSON.stringify({ errors, warnings }));
-  assert.deepEqual(warnings, []);
+  assert.equal(registrations, 2);
   assert.ok(
     errors.some((message) =>
       message.includes("settings.plugin.item contribution disabled"),
     ),
-  );
-});
-
-test("uses the official lifecycle seat and stable chat anchors", () => {
-  assert.match(
-    client,
-    /safeSlotInject\(ctx, "conversation\.session\.header\.actions"/u,
-  );
-  assert.match(client, /document\.querySelector\("\[data-chat-flow\]"\)/u);
-  assert.match(client, /querySelectorAll\("\[data-chat-anchor-key\]"\)/u);
-  assert.match(client, /react_dom\.createPortal/u);
-});
-
-test("uses observer-backed geometry and cleans up scheduled work", () => {
-  assert.match(client, /new IntersectionObserver/u);
-  assert.match(client, /new ResizeObserver/u);
-  assert.match(client, /new MutationObserver/u);
-  assert.match(client, /cancelAnimationFrame/u);
-});
-
-test("keeps viewport geometry when a filter has no materialized anchors", () => {
-  for (const value of [
-    "const keepViewportRef = (0, react.useRef)(false)",
-    "trackedKeys.current.size === 0 && !keepViewportRef.current",
-    "trackAnchors: (0, react.useCallback)((keys, keepViewport = false)",
-    "keepViewportRef.current = keepViewport",
-    "if (keepViewport) scheduleMeasure(true)",
-    "const shouldRenderRail = shouldRenderRailSurface(preferences.enabled, favoritesOnly, visibleItems.length, hasMore)",
-    "trackAnchors([], false)",
-    "if (!shouldRenderRail) return null",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.match(
-    client,
-    /trackAnchors\(shouldRenderRail \? visibleItems\.flatMap[\s\S]*?, shouldRenderRail\)/u,
-  );
-  assert.doesNotMatch(
-    client,
-    /shouldRenderRailSurface\(preferences\.enabled, favoritesOnly, located\.length/u,
-    "anchor measurement must not be required before the rail can register anchors",
-  );
-});
-
-test("keeps paging, keyboard, reduced-motion, search, and settings contracts", () => {
-  for (const value of [
-    "loadOlderAnchored",
-    'event.key === "ArrowUp"',
-    'event.key === "Enter"',
-    'event.key === " "',
-    "prefers-reduced-motion:reduce",
-    "timeline.search.noneEarlier",
-    "settings.followHighlight",
-    "shouldRenderRailSurface",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.doesNotMatch(
-    client,
-    /items\.length < 3 && !hasMore/u,
-    "the timeline must not hide itself for short sessions",
-  );
-});
-
-test("coordinates adaptive jumps with DSH-style prepend anchoring and landing verification", () => {
-  for (const value of [
-    "const pagingRestoreRef = (0, react.useRef)(null)",
-    "const capturePagingAnchor = (0, react.useCallback)",
-    "loadOlder: loadOlderAnchored",
-    "scrollport.scrollTop += flowTop(row, scrollport) - saved.top",
-    "const scrollRequestRef = (0, react.useRef)(0)",
-    "const manualScrollRef = (0, react.useRef)(0)",
-    "cancelScroll: (0, react.useCallback)",
-    "cancelScroll();",
-    "manualScrollVersion() !== jumpRequest.manualScrollVersion",
-    "function resolveJumpBehavior",
-    "function resolveJumpSettle",
-    "options.loadedPages ?? 0",
-    "const beforeTarget = Math.max(0, Math.min(limit(), top - settle.offset))",
-    "const eased = 1 - Math.pow(1 - progress, 3)",
-    "(performance.now() - startedAt) / settle.duration",
-    "performance.now() - startedAt < 900",
-    "stableFrames = error <= 2 ? stableFrames + 1 : 0",
-    "function userBubbleElement(row)",
-    'row.querySelector("[data-time-hover-root]")',
-    '!child.hasAttribute("data-slot")',
-    "const bubble = userBubbleElement(element)",
-    'bubble.setAttribute("data-dsh-codex-timeline-landed", "true")',
-    "if (options.landingFlash !== false)",
-    "landingFlash: preferences.landingFlash !== false",
-    "@keyframes RhpIHW_landing-flash",
-    "box-shadow:inset 0 0 0 999px color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,transparent)",
-    "animation:RhpIHW_landing-flash .64s ease-out 1",
-    "[data-dsh-codex-timeline-landed=true]{animation:none}",
-    "jumpRequest.pages >= 400",
-    "progress.stalls >= 5",
-    "advanceJumpPagingProgress(progress",
-    "anchorCount: materializedAnchorCount()",
-    'role: "status"',
-    '"aria-live": "polite"',
-    '"data-turn-nav-jump": markerJumpState ?? void 0',
-    "const jumpNoticeTimerRef = (0, react.useRef)(null)",
-    "}, 300)",
-    'className: "RhpIHW_jumpNotice"',
-    ".RhpIHW_jumpNotice{position:absolute;z-index:7;top:auto;bottom:12px;left:12px",
-    ".RhpIHW_host[data-turn-nav-side=right]>.RhpIHW_jumpNotice{left:12px;right:auto}",
-    '"timeline.jump.loadingProgress"',
-    '"timeline.jump.landed"',
-    '"timeline.jump.failed"',
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.doesNotMatch(client, /const \[pendingJumpId/u);
-  assert.doesNotMatch(client, /setPendingJumpId/u);
-  assert.doesNotMatch(client, /gave up after 30 pages/u);
-  assert.doesNotMatch(client, /nodes\.size > progress\.lastNodeCount/u);
-  assert.doesNotMatch(
-    client,
-    /\.RhpIHW_jumpNotice\{position:fixed;top:48px/u,
-    "the jump notice must dock at the conversation bottom-left instead of the top center",
-  );
-  assert.doesNotMatch(
-    client,
-    /data-dsh-codex-timeline-landed=true\]\{outline:2px/u,
-    "the arrival cue must not restore the high-contrast outline",
-  );
-  assert.doesNotMatch(
-    client,
-    /\[data-chat-anchor-key\]\[data-dsh-codex-timeline-landed=true\]/u,
-    "the arrival cue must target the bubble instead of the complete flow row",
-  );
-});
-
-test("persists an independently switchable landing flash", () => {
-  for (const value of [
-    "landingFlash: true",
-    "checked: settings.landingFlash",
-    'setPreference("landingFlash", value)',
-    "next.landingFlash === this.snapshot.landingFlash",
-    '"settings.landingFlash"',
-    '"settings.landingFlashHint"',
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-});
-
-test("mounts after an initially empty transcript without remounting on prepend", () => {
-  const start = client.indexOf("function AdditiveTurnNavigation");
-  const end = client.indexOf("function apply$1", start);
-  const additive = client.slice(start, end);
-  for (const value of [
-    "const registeredAnchorsRef = (0, react.useRef)",
-    "const seatRef = (0, react.useRef)(null)",
-    "const ensureNavigationSeat = (0, react.useCallback)",
-    "if (column === null || list === null || root === null) return",
-    "ensureNavigationSeat();",
-    "const syncNavigationAnchors = (0, react.useCallback)",
-    "registeredAnchorsRef.current = next",
-    "}, [ensureNavigationSeat, navigation.registerAnchor])",
-    "}, [order, ensureNavigationSeat, syncNavigationAnchors])",
-  ]) {
-    assert.ok(additive.includes(value), value);
-  }
-  assert.doesNotMatch(
-    additive,
-    /sessionId,\s*order,\s*navigation\.registerAnchor/u,
-    "order changes must update anchors without remounting the portal",
-  );
-});
-
-test("remounts the additive timeline when the host replaces the chat flow", () => {
-  const hooks = [];
-  let hookIndex = 0;
-  let pendingEffects = [];
-  let renderPending = false;
-  let currentFlow = null;
-  let observer;
-  let nextFrame = 1;
-  const frames = new Map();
-
-  const react = {
-    useRef(initial) {
-      const index = hookIndex++;
-      hooks[index] ??= { kind: "ref", value: { current: initial } };
-      return hooks[index].value;
-    },
-    useState(initial) {
-      const index = hookIndex++;
-      hooks[index] ??= {
-        kind: "state",
-        value: typeof initial === "function" ? initial() : initial,
-      };
-      const setValue = (next) => {
-        hooks[index].value =
-          typeof next === "function" ? next(hooks[index].value) : next;
-        renderPending = true;
-      };
-      return [hooks[index].value, setValue];
-    },
-    useLayoutEffect(effect, dependencies) {
-      const index = hookIndex++;
-      const previous = hooks[index];
-      const changed =
-        previous === undefined ||
-        dependencies.some(
-          (value, offset) => value !== previous.dependencies[offset],
-        );
-      if (!changed) return;
-      pendingEffects.push(() => {
-        previous?.cleanup?.();
-        hooks[index] = {
-          kind: "effect",
-          dependencies,
-          cleanup: effect(),
-        };
-      });
-    },
-  };
-  class TestMutationObserver {
-    constructor(callback) {
-      this.callback = callback;
-      this.disconnected = false;
-      observer = this;
-    }
-    observe(root, options) {
-      this.root = root;
-      this.options = options;
-    }
-    disconnect() {
-      this.disconnected = true;
-    }
-  }
-  const requestAnimationFrame = (callback) => {
-    const id = nextFrame++;
-    frames.set(id, callback);
-    return id;
-  };
-  const cancelAnimationFrame = (id) => frames.delete(id);
-  const document = {
-    body: {},
-    querySelector: () => currentFlow,
-  };
-  const mountedComponent = () => undefined;
-  const AdditiveTurnNavigation = additiveMountWrapper({
-    MutationObserver: TestMutationObserver,
-    MountedAdditiveTurnNavigation: mountedComponent,
-    cancelAnimationFrame,
-    document,
-    react,
-    react_jsx_runtime: {
-      jsx: (type, props, key) => ({ key, props, type }),
-    },
-    requestAnimationFrame,
-  });
-  const props = { sessionId: "session-1" };
-  const flow = (name) => ({
-    isConnected: true,
-    name,
-    nodeType: 1,
-    matches: (selector) => selector === "[data-chat-flow]",
-    querySelector: () => null,
-  });
-  const render = () => {
-    hookIndex = 0;
-    pendingEffects = [];
-    renderPending = false;
-    const output = AdditiveTurnNavigation(props);
-    for (const effect of pendingEffects) effect();
-    return output;
-  };
-  const settleRender = () => {
-    let output = render();
-    while (renderPending) output = render();
-    return output;
-  };
-  const flushFrame = () => {
-    const callbacks = [...frames.values()];
-    frames.clear();
-    for (const callback of callbacks) callback();
-  };
-
-  const firstFlow = flow("first");
-  currentFlow = firstFlow;
-  let output = settleRender();
-  assert.equal(output.type, mountedComponent);
-  assert.equal(output.key, 1);
-  assert.equal(observer.root, document.body);
-  assert.deepEqual(plain(observer.options), { childList: true, subtree: true });
-
-  const unrelated = {
-    nodeType: 1,
-    matches: () => false,
-    querySelector: () => null,
-  };
-  observer.callback([{ addedNodes: [unrelated], removedNodes: [] }]);
-  assert.equal(frames.size, 0, "unrelated mutations do not scan the document");
-
-  firstFlow.isConnected = false;
-  currentFlow = null;
-  observer.callback([{ addedNodes: [], removedNodes: [unrelated] }]);
-  observer.callback([{ addedNodes: [], removedNodes: [unrelated] }]);
-  assert.equal(frames.size, 1, "flow checks are coalesced to one frame");
-  flushFrame();
-  output = settleRender();
-  assert.equal(
-    output,
-    null,
-    "the detached bridge is unmounted off the chat tab",
-  );
-
-  const secondFlow = flow("second");
-  currentFlow = secondFlow;
-  observer.callback([{ addedNodes: [secondFlow], removedNodes: [] }]);
-  flushFrame();
-  output = settleRender();
-  assert.equal(output.type, mountedComponent);
-  assert.equal(output.key, 3);
-
-  secondFlow.isConnected = false;
-  observer.callback([{ addedNodes: [], removedNodes: [secondFlow] }]);
-  assert.equal(frames.size, 1);
-  hooks[3].cleanup();
-  assert.equal(observer.disconnected, true);
-  assert.equal(frames.size, 0, "pending flow checks are cancelled on cleanup");
-});
-
-test("removed auto-load-all and made the recent-turns count a setting", () => {
-  for (const dropped of [
-    "autoLoadTimerRef",
-    "loadOlderRef",
-    "settings.autoLoadAll",
-    "failed to auto-load older history",
-    "autoLoadAll: false",
-  ]) {
-    assert.ok(!client.includes(dropped), dropped);
-  }
-  assert.match(client, /preferences\.recentTurns \?\? 25/u);
-  assert.match(client, /"settings\.recentTurns"/u);
-  assert.doesNotMatch(client, /codex-timeline\/history-index/u);
-});
-
-test("persists an opt-in right side and mirrors the complete interaction surface", () => {
-  for (const value of [
-    'const railSide = preferences.side === "right" ? "right" : "left"',
-    '"data-turn-nav-side": railSide',
-    'side: "left"',
-    'checked: settings.side === "right"',
-    'setPreference("side", value ? "right" : "left")',
-    'side: clean.side === "right" ? "right" : "left"',
-    "next.side === this.snapshot.side",
-    '"settings.showOnRight"',
-    '"settings.showOnRightHint"',
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-
-  for (const value of [
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(var(--dsh-scrollbar-width, 8px),env(safe-area-inset-right, 0px))}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail{left:auto;right:calc(-4px + var(--turn-nav-right-safe-inset));pointer-events:none}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail>:is(.RhpIHW_railClose,.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger,.RhpIHW_searchPanel,.RhpIHW_track){pointer-events:auto}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_rail .RhpIHW_track{left:auto;right:calc(var(--turn-nav-left, 0px) + 4px);width:38px}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_marker{left:auto;right:0}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mark{left:auto;right:12px;transform-origin:right center}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"1\\"] .RhpIHW_railPeekMark{left:auto;right:13px}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"2\\"] .RhpIHW_railPeekMark{left:auto;right:14px}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_desktopTrigger{left:auto;right:var(--turn-nav-right-safe-inset)}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_mobileTrigger{left:auto;right:max(8px,env(safe-area-inset-right, 0px))}',
-    '[data-details-collapsed] .RhpIHW_host[data-turn-nav-side=\\"right\\"]{--turn-nav-right-safe-inset:max(0px,env(safe-area-inset-right, 0px))}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_tooltip{left:auto;right:calc(100% + 24px)}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)::after{left:auto;right:100%}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] :is(.RhpIHW_searchTrigger,.RhpIHW_favoriteTrigger){left:auto;right:7px}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_railClose{left:auto;right:28px}',
-    '.RhpIHW_host[data-turn-nav-side=\\"right\\"] .RhpIHW_searchPanel{left:auto;right:42px}',
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-
-  assert.ok(client.includes(".RhpIHW_rail{left:-4px}"));
-  assert.doesNotMatch(client, /scaleX\(-1\)/u);
-});
-
-test("removes the redundant desktop load-earlier control without removing automatic paging", () => {
-  const desktopRailStart = client.indexOf("railVisible &&");
-  const desktopRailEnd = client.indexOf("drawerOpen &&", desktopRailStart);
-  assert.ok(desktopRailStart >= 0 && desktopRailEnd > desktopRailStart);
-
-  const desktopRail = client.slice(desktopRailStart, desktopRailEnd);
-  assert.doesNotMatch(
-    desktopRail,
-    /TurnNavigation_module_css_default\.earlier/u,
-  );
-  assert.doesNotMatch(client, /const (?:unloadedCount|earlierLabel)\b/u);
-  assert.doesNotMatch(client, /"timeline\.earlierCount"/u);
-  assert.ok(client.includes("const railTrackTop = 52"));
-  assert.ok(client.includes("loadOlder: loadOlderAnchored"));
-  assert.ok(client.includes("TurnNavigation_module_css_default.drawerEarlier"));
-});
-
-test("uses a fixed logical rail window with one-item wheel steps", () => {
-  for (const value of [
-    "function deriveRailWindow",
-    "function stepRailWindow",
-    "function railWindowStartForIndex",
-    "function accumulateRailWheel",
-    "function resolveRailWheel",
-    "const [railWindowAnchorId, setRailWindowAnchorId]",
-    'track.addEventListener("wheel", onRailWheel, { passive: false })',
-    "resolution.shouldPreventDefault",
-    "event.preventDefault()",
-    "target.closest(`.${TurnNavigation_module_css_default.tooltip}`)",
-    '"aria-description": t("timeline.scrollHint")',
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.match(
-    client,
-    /ref: railTrackRef,\s+className: TurnNavigation_module_css_default\.track/u,
-  );
-  assert.doesNotMatch(
-    client,
-    /className: TurnNavigation_module_css_default\.rail,\s+onWheel/u,
-  );
-  assert.doesNotMatch(client, /\.RhpIHW_track\{[^}]*overflow-y:auto/u);
-});
-
-test("published rail helpers match the behavior-tested source model", () => {
-  const bundled = bundledRailModel();
-  const entries = Array.from({ length: 60 }, (_, index) => ({
-    item: { id: `turn:${index + 1}` },
-  }));
-
-  for (const anchor of [null, "turn:1", "turn:22", "turn:missing"]) {
-    assert.deepEqual(
-      plain(bundled.deriveRailWindow(entries, 25, anchor)),
-      plain(sourceDeriveRailWindow(entries, 25, anchor)),
-    );
-  }
-  assert.deepEqual(
-    plain(
-      bundled.deriveRailBand(bundled.deriveRailWindow(entries, 25, "turn:22")),
-    ),
-    plain(sourceDeriveRailBand(sourceDeriveRailWindow(entries, 25, "turn:22"))),
-  );
-  for (const clientY of [99, 100, 114.999, 115, 474.999, 475]) {
-    assert.equal(
-      bundled.railSlotAtPointer(clientY, 100, 0, 15, 25),
-      sourceRailSlotAtPointer(clientY, 100, 0, 15, 25),
-    );
-  }
-  for (const args of [
-    [true, false, 1, false],
-    [true, true, 0, false],
-    [true, false, 0, true],
-    [true, false, 0, false],
-    [false, true, 1, true],
-  ]) {
-    assert.equal(
-      bundled.shouldRenderRailSurface(...args),
-      sourceShouldRenderRailSurface(...args),
-    );
-  }
-  const progress = {
-    firstKey: "node-900",
-    orderLength: 100,
-    anchorCount: 105,
-    stalls: 2,
-  };
-  for (const snapshot of [
-    { firstKey: "node-700", orderLength: 100, anchorCount: 105 },
-    { firstKey: "node-900", orderLength: 120, anchorCount: 105 },
-    { firstKey: "node-900", orderLength: 100, anchorCount: 433 },
-    { firstKey: "node-900", orderLength: 100, anchorCount: 105 },
-  ]) {
-    assert.equal(
-      JSON.stringify(bundled.advanceJumpPagingProgress(progress, snapshot)),
-      JSON.stringify(sourceAdvanceJumpPagingProgress(progress, snapshot)),
-    );
-  }
-  for (const [previous, current] of [
-    [Number.NEGATIVE_INFINITY, 0],
-    [0, 119],
-    [0, 120],
-    [120, 100],
-  ]) {
-    assert.equal(
-      bundled.classifyRailMotion(previous, current),
-      sourceClassifyRailMotion(previous, current),
-    );
-  }
-  assert.deepEqual(
-    plain(bundled.deriveRailGeometry(360, 25, 15, 2)),
-    plain(sourceDeriveRailGeometry(360, 25, 15, 2)),
-  );
-  for (const direction of [-100, -1, 0, 1, 100]) {
-    assert.equal(
-      bundled.stepRailWindow(12, entries.length, 25, direction),
-      sourceStepRailWindow(12, entries.length, 25, direction),
-    );
-  }
-  for (const index of [0, 9, 10, 34, 35, 59]) {
-    assert.equal(
-      bundled.railWindowStartForIndex(10, index, entries.length, 25),
-      sourceRailWindowStartForIndex(10, index, entries.length, 25),
-    );
-  }
-  for (const args of [
-    [200, 800, false, 0],
-    [1201, 800, false, 0],
-    [200, 800, true, 0],
-    [200, 800, false, 1],
-  ]) {
-    assert.equal(
-      bundled.resolveJumpBehavior(...args),
-      sourceResolveJumpBehavior(...args),
-    );
-  }
-  for (const args of [
-    [1201, 800, false, 0],
-    [-1201, 800, false, 0],
-    [200, 400, false, 1],
-    [1200, 800, false, 0],
-    [1201, 800, true, 0],
-  ]) {
-    assert.equal(
-      JSON.stringify(bundled.resolveJumpSettle(...args)),
-      JSON.stringify(sourceResolveJumpSettle(...args)),
-    );
-  }
-  let sourceGesture;
-  let bundledGesture;
-  for (const input of [
-    { deltaY: 20, timeStamp: 0 },
-    { deltaY: 90, timeStamp: 16 },
-    { deltaY: 100, timeStamp: 24 },
-    { deltaX: 20, deltaY: 10, timeStamp: 32 },
-    { deltaY: -12, timeStamp: 48 },
-  ]) {
-    sourceGesture = sourceAccumulateRailWheel(sourceGesture, input);
-    bundledGesture = bundled.accumulateRailWheel(bundledGesture, input);
-    assert.deepEqual(plain(bundledGesture), plain(sourceGesture));
-  }
-
-  let sourceStart = 10;
-  let bundledStart = 10;
-  sourceGesture = undefined;
-  bundledGesture = undefined;
-  for (const input of [
-    { deltaY: 20, timeStamp: 0 },
-    { deltaX: 20, deltaY: 10, timeStamp: 10 },
-    { deltaY: 16, timeStamp: 20 },
-    { deltaY: 100, timeStamp: 200 },
-    { deltaY: -100, ctrlKey: true, timeStamp: 220 },
-  ]) {
-    const source = sourceResolveRailWheel(
-      sourceGesture,
-      input,
-      sourceStart,
-      entries.length,
-      25,
-    );
-    const emitted = bundled.resolveRailWheel(
-      bundledGesture,
-      input,
-      bundledStart,
-      entries.length,
-      25,
-    );
-    assert.deepEqual(plain(emitted), plain(source));
-    sourceGesture = source.gesture;
-    bundledGesture = emitted.gesture;
-    sourceStart = source.start;
-    bundledStart = emitted.start;
-  }
-});
-
-test("shows two complete graded edge markers and animates stable slots", () => {
-  for (const value of [
-    ".RhpIHW_railBandSlot{transition:transform .17s cubic-bezier(.22,.75,.18,1);will-change:transform}",
-    ".RhpIHW_railPreviewSlot{pointer-events:auto;cursor:pointer;opacity:0;z-index:0;transition:transform .17s cubic-bezier(.22,.75,.18,1),opacity .09s ease-in}",
-    ".RhpIHW_track:hover .RhpIHW_railPreviewSlot,.RhpIHW_track:focus-within .RhpIHW_railPreviewSlot{opacity:1",
-    ".RhpIHW_railPeekMark{pointer-events:none;background:var(--dsw-alias-label-tertiary);border-radius:2px;position:absolute;top:50%;transform:translateY(-50%);transition:width .16s cubic-bezier(.22,.75,.18,1),opacity .08s ease-out}",
-    '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"1\\"] .RhpIHW_railPeekMark{width:7px;height:2px;left:13px;opacity:.42}',
-    '.RhpIHW_railPreviewSlot[data-turn-nav-peek-depth=\\"2\\"] .RhpIHW_railPeekMark{width:5px;height:2px;left:14px;opacity:.24}',
-    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railBandSlot{transition-duration:.11s;transition-timing-function:cubic-bezier(.16,.84,.24,1)}',
-    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railPreviewSlot{transition-property:transform,opacity;transition-duration:.11s,.09s',
-    ".RhpIHW_railPreviewSlot{transition-duration:.17s,.13s}.RhpIHW_track:hover .RhpIHW_railPreviewSlot,.RhpIHW_track:focus-within .RhpIHW_railPreviewSlot{transition-duration:.17s,.19s}",
-    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"] .RhpIHW_railPreviewSlot{transition-duration:.11s,.13s}',
-    '.RhpIHW_track[data-turn-nav-motion=\\"burst\\"]:hover .RhpIHW_railPreviewSlot,.RhpIHW_track[data-turn-nav-motion=\\"burst\\"]:focus-within .RhpIHW_railPreviewSlot{transition-duration:.11s,.19s}',
-    "@media (prefers-reduced-motion:reduce){.RhpIHW_railBandSlot,.RhpIHW_railPeekMark{transition:none}}",
-    'edge: "older"',
-    'edge: "newer"',
-    '"data-turn-nav-peek": edge',
-    '"data-turn-nav-peek-depth": depth',
-    '"data-turn-nav-peek-item": item.id',
-    '"data-turn-nav-peek-slot": relativeIndex',
-    "translate3d(0, ${relativeIndex * railGap}px, 0)",
-    '"data-turn-nav-motion": railMotionMode',
-    "classifyRailMotion(railLastMotionAtRef.current, motionAt)",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.doesNotMatch(client, /olderPeek\b|newerPeek\b/u);
-  assert.doesNotMatch(client, /railPeekLayer/u);
-  assert.doesNotMatch(
-    client,
-    /data-turn-nav-animate=false[^}]*transition:none/u,
-  );
-  assert.doesNotMatch(
-    client,
-    /\.RhpIHW_railPeekMark\[data-turn-nav-peek-depth=/u,
-  );
-  assert.doesNotMatch(
-    client,
-    /\[data-turn-nav-peek-depth=[12]\]/u,
-    "numeric CSS attribute values must stay quoted so browsers keep the rule",
-  );
-  assert.ok(client.includes("children: railBandItems.map"));
-  assert.match(client, /key: item\.id/u);
-  assert.doesNotMatch(client, /\.RhpIHW_railPreviewSlot\{pointer-events:none/u);
-  assert.match(
-    client,
-    /onMouseLeave: \(\) => \{\s+hoveredSlotRef\.current = null;\s+setHoveredId\(null\)/u,
-  );
-  for (const value of [
-    "onMouseEnter: syncRailHoverAtPointer",
-    "onMouseMove: syncRailHoverAtPointer",
-    'target.closest("[data-turn-nav-peek-item]")',
-    'preview.getAttribute("data-turn-nav-peek-item")',
-    'const previewSlot = Number(preview.getAttribute("data-turn-nav-peek-slot"))',
-    "hoveredSlotRef.current = Number.isInteger(previewSlot) ? previewSlot : null",
-    "railSlotAtPointer(event.clientY, bounds.top, railStartOffset, railGap, railItems.length)",
-    "setHoveredId((current) => current === nextId ? current : nextId)",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-  assert.doesNotMatch(
-    client,
-    /hoveredSlotRef\.current = index/u,
-    "moving keyed slots must not overwrite the fixed physical hover slot",
-  );
-  assert.ok(client.includes(".RhpIHW_marker{height:100%;min-height:0}"));
-  assert.ok(client.includes(".RhpIHW_markerSlot{min-height:0}"));
-  assert.ok(
-    client.lastIndexOf(".RhpIHW_markerSlot{min-height:0}") >
-      client.indexOf(".RhpIHW_markerSlot{position:relative;height:"),
-  );
-});
-
-test("makes graded edge markers previewable, jumpable, and part of the wave", () => {
-  const start = client.indexOf("if (edge !== void 0) return");
-  const end = client.indexOf("const index = windowIndex", start);
-  const previewBranch = client.slice(start, end);
-  const previewOuter = previewBranch.slice(
-    0,
-    previewBranch.indexOf("children: ["),
-  );
-
-  assert.ok(start >= 0 && end > start);
-  assert.doesNotMatch(previewOuter, /aria-hidden/u);
-  for (const value of [
-    'role: "button"',
-    '"aria-label": ariaLabel',
-    '"aria-current": current ? "location" : void 0',
-    "tabIndex: railTabStopId === item.id ? 0 : -1",
-    "onClick: activateItem",
-    "onMarkerKeyDown(event, item)",
-    "disclosed &&",
-    "(Tooltip, {",
-  ]) {
-    assert.ok(previewBranch.includes(value), value);
-  }
-  assert.match(client, /const railTabStopId = railBandItems\.some/u);
-  for (const value of [
-    ".RhpIHW_railBandSlot[data-turn-nav-disclosed=true] :is(.RhpIHW_mark,.RhpIHW_railPeekMark){width:39px!important",
-    ".RhpIHW_railBandSlot:has(+ .RhpIHW_railBandSlot[data-turn-nav-disclosed=true]) :is(.RhpIHW_mark,.RhpIHW_railPeekMark)",
-    "{width:30px!important;left:12px!important;opacity:.72}",
-    "{width:21px!important;left:12px!important;opacity:.58}",
-    "{width:15px!important;left:12px!important;opacity:.46}",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-});
-
-test("keyboard navigation crosses rail windows without losing the tab stop", () => {
-  assert.match(
-    client,
-    /railItemsAll\.findIndex\(\(\{ item \}\) => item\.id === from\)/u,
-  );
-  assert.ok(client.includes('event.key === "PageUp"'));
-  assert.ok(client.includes('event.key === "PageDown"'));
-  assert.match(client, /tabIndex: railTabStopId === item\.id \? 0 : -1/u);
-  assert.match(
-    client,
-    /requestAnimationFrame\(\(\) => \{\s+buttonRefs\.current\.get\(next\.id\)\?\.focus\(\)/u,
-  );
-});
-
-test("keeps current and disclosed marker states visually distinct", () => {
-  assert.ok(
-    client.includes(
-      ".RhpIHW_markerSlot[data-turn-nav-disclosed=true] .RhpIHW_mark{width:39px!important",
-    ),
-  );
-  assert.ok(
-    client.includes(
-      ".RhpIHW_markerSlot:has(+ .RhpIHW_markerSlot[data-turn-nav-disclosed=true]) .RhpIHW_mark",
-    ),
-  );
-  assert.ok(
-    client.includes(
-      ".RhpIHW_markerSlot .RhpIHW_mark{width:9px!important;background:var(--dsw-alias-label-tertiary);opacity:.32}",
-    ),
-  );
-  assert.ok(
-    client.includes(
-      ".RhpIHW_markerSlot .RhpIHW_mark{transition:width .16s cubic-bezier(.22,.75,.18,1),opacity .08s ease-out,transform .12s ease-out}@media (prefers-reduced-motion:reduce){.RhpIHW_markerSlot .RhpIHW_mark{transition:none}}",
-    ),
-  );
-  assert.ok(
-    client.includes(".RhpIHW_active .RhpIHW_mark{width:9px;height:3px"),
-  );
-  assert.doesNotMatch(
-    client,
-    /\.RhpIHW_active \.RhpIHW_mark,\.RhpIHW_markerSlot:hover/u,
-  );
-  assert.match(client, /const showCurrent = current && hoveredId === null/u);
-  assert.match(
-    client,
-    /showCurrent && TurnNavigation_module_css_default\.active/u,
-  );
-  assert.doesNotMatch(client, /const highlightedId/u);
-});
-
-test("leaves a bridged gap between an expanded marker and its tooltip", () => {
-  assert.ok(
-    client.includes(
-      ".RhpIHW_tooltip{left:calc(100% + 24px)}.RhpIHW_markerSlot::after,.RhpIHW_railPreviewSlot::after{width:24px}",
-    ),
-  );
-  assert.ok(
-    client.includes(
-      ":is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)::after{pointer-events:none}:is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot)[data-turn-nav-disclosed=true]::after,:is(.RhpIHW_markerSlot,.RhpIHW_railPreviewSlot):focus-within::after{pointer-events:auto}",
-    ),
-  );
-});
-
-test("keeps timeline previews above sticky transcript surfaces", () => {
-  assert.ok(
-    client.includes(".B_rMOG_navigationSeat{width:100%;margin:0;z-index:20}"),
-  );
-});
-
-test("keeps dated tooltip metadata on one line", () => {
-  for (const value of [
-    ".RhpIHW_tooltip{width:min(320px,100vw - 96px)}",
-    ".RhpIHW_tooltipMeta{gap:6px;white-space:nowrap}",
-    ".RhpIHW_tooltipMeta>strong,.RhpIHW_tooltipMeta>span{flex:none}",
-  ]) {
-    assert.ok(client.includes(value), value);
-  }
-});
-
-test("renders answer previews as strict two-line plain text", () => {
-  assert.ok(
-    client.includes(
-      ".RhpIHW_answer{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;max-height:32px;white-space:pre-line;overflow:hidden}",
-    ),
-  );
-  assert.match(
-    client,
-    /className: TurnNavigation_module_css_default\.answer,\s+children: item\.answer/u,
   );
 });

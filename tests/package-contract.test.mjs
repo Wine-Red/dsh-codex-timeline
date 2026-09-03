@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { apply } from "../lib/index.js";
@@ -32,67 +31,73 @@ test("ships as an additive public DSH bundle", () => {
   assert.notEqual(manifest.private, true);
   assert.equal(manifest.dsh.bundle.patch, "./cordis.patch.yml");
   assert.equal(manifest.dsh.profile, undefined);
-  assert.doesNotMatch(
-    patch,
-    /- id: ui-conversation/u,
-    "the timeline must never replace or disable the official Conversation",
-  );
+  assert.doesNotMatch(patch, /- id: ui-conversation/u);
   assert.match(
     patch,
     /- insert:\s+- id: codex-timeline\s+name: dsh-codex-timeline/u,
   );
 });
 
-test("declares the verified 0.1.1-rc.2 compatibility window", () => {
-  assert.equal(compatibility.dsh.version, "0.1.1-rc.2");
-  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.1-rc.2"]);
-  assert.equal(
-    compatibility.officialConversation.package,
-    "@deepseek-ai/dsh-client-ui-conversation",
-  );
+test("declares the verified alpha3 official-navigation contract", () => {
+  assert.equal(compatibility.dsh.version, "0.1.2-alpha.3");
+  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.2-alpha.3"]);
   assert.equal(compatibility.officialConversation.ownership, "preserved");
-  assert.equal(compatibility.adapter.mode, "additive-public-lifecycle");
+  assert.equal(compatibility.adapter.mode, "official-navigation-enhancer");
   assert.equal(
     compatibility.adapter.publicSlot,
     "conversation.session.header.actions",
   );
   for (const [name, version] of Object.entries(manifest.peerDependencies)) {
-    if (name.startsWith("@deepseek-ai/dsh-"))
-      assert.equal(version, "^0.1.1-rc.2", name);
+    if (name.startsWith("@deepseek-ai/dsh-")) {
+      assert.equal(version, "^0.1.2-alpha.3", name);
+    }
   }
-  assert.equal(
-    manifest.dependencies["@deepseek-ai/dsh-settings"],
-    "0.1.1-rc.2",
-    "the bundled Host settings ABI matches the verified runtime",
-  );
 });
 
-test("accepts the verified ReactDOM 18 runtime and compatible ReactDOM 19 hosts", () => {
-  assert.equal(manifest.peerDependencies["react-dom"], "^18.3.1 || ^19.0.0");
+test("does not resolve removed or duplicated browser runtimes", () => {
+  assert.doesNotMatch(host, /settingsNamespace/u);
+  assert.doesNotMatch(client, /dsh-client-runtime/u);
+  assert.doesNotMatch(client, /dsh-client-ui-chat/u);
+  assert.doesNotMatch(client, /dsh-client-ui-conversation/u);
+  assert.deepEqual(
+    [...client.matchAll(/require\("([^"]+)"\)/gu)].map((match) => match[1]),
+    ["react", "react/jsx-runtime"],
+  );
 });
 
 test("installer accepts only the verified DSH version", () => {
   assert.match(
     installer,
-    /\$supportedVersions\s*=\s*@\(['"]0\.1\.1-rc\.2['"]\)/u,
+    /\$supportedVersions\s*=\s*@\(['"]0\.1\.2-alpha\.3['"]\)/u,
   );
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });
 
-test("defaults landing flash on, placement left, and validates persisted settings", () => {
-  let timelineSchema;
+test("preserves and validates the complete preference namespace", () => {
+  let schema;
   const errors = [];
+  const mutations = [];
   apply({
     logger: { error: (message) => errors.push(message) },
     inject: (services, install) => {
       if (services.length !== 1 || services[0] !== "settings") return;
       install({
         settings: {
-          register: (_namespace, schema) => {
-            timelineSchema = schema;
+          register: (_namespace, value) => {
+            schema = value;
           },
-          describe: () => [],
+          describe: () => [
+            {
+              ns: "dsh-codex-timeline",
+              value: { enabled: true, landingFlash: true },
+              user: { landingFlash: true },
+              revision: 1,
+            },
+          ],
           update: async () => undefined,
+          mutate: async (namespace, operations) => {
+            mutations.push({ namespace, operations });
+          },
         },
       });
     },
@@ -100,46 +105,35 @@ test("defaults landing flash on, placement left, and validates persisted setting
     webServer: { register: () => () => undefined },
   });
 
-  assert.equal(typeof timelineSchema, "function");
-  assert.equal(timelineSchema({}).landingFlash, true);
-  assert.equal(timelineSchema({ landingFlash: false }).landingFlash, false);
-  assert.equal(timelineSchema({}).side, "left");
-  assert.equal(timelineSchema({ side: "left" }).side, "left");
-  assert.equal(timelineSchema({ side: "right" }).side, "right");
-  assert.throws(() => timelineSchema({ side: "top" }), TypeError);
+  const defaults = schema({});
+  assert.deepEqual(defaults.favorites, []);
+  assert.equal(defaults.enabled, true);
+  assert.equal("landingFlash" in defaults, false);
+  assert.equal(defaults.side, "left");
+  assert.equal(defaults.leftOffset, 0);
+  assert.equal(defaults.centerOffset, 0);
+  assert.equal(defaults.markerSpacing, 10);
+  assert.equal(defaults.recentTurns, 25);
+  assert.throws(() => schema({ side: "top" }), TypeError);
+  assert.throws(() => schema({ markerSpacing: 41 }), TypeError);
+  assert.throws(() => schema({ recentTurns: 4 }), TypeError);
+  assert.deepEqual(mutations, [
+    {
+      namespace: "dsh-codex-timeline",
+      operations: [{ op: "unset", path: ["landingFlash"] }],
+    },
+  ]);
   assert.deepEqual(errors, []);
 });
 
-test("keeps the original 0.3.2 style corpus byte-for-byte", () => {
-  const pattern = /\bconst css(?:\$\d+)? = ("(?:\\.|[^"\\])*");/gu;
-  const styles = [...client.matchAll(pattern)].map((match) =>
-    JSON.parse(match[1]),
-  );
-  assert.equal(styles.length, 23);
-  assert.equal(
-    createHash("sha256").update(styles.join("\n")).digest("hex"),
-    compatibility.adapter.styleCorpusSha256,
-  );
-});
-
-test("bridges message images without replacing the component path", () => {
-  assert.match(client, /LegacyImageGallery/u);
-  assert.match(client, /renderSlot\("conversation\.message\.images"/u);
-  assert.equal(
-    compatibility.adapter.messageImagesSlot,
-    "conversation.message.images",
-  );
-});
-
-test("returns the complete lightweight index for long scrollable rails", async () => {
-  assert.doesNotMatch(host, /SEARCH_INDEX_MAX/u);
-
+test("returns every turn with jump and completed-turn branch anchors", async () => {
   const events = [];
   let seq = 0;
-  for (let turn = 1; turn <= 750; turn += 1) {
+  for (let turn = 1; turn <= 300; turn += 1) {
     events.push({ seq: seq++, type: "turn/start", data: { turn } });
+    const userSeq = seq++;
     events.push({
-      seq: seq++,
+      seq: userSeq,
       time: turn,
       type: "user/message",
       surfaceOp: "append",
@@ -147,6 +141,13 @@ test("returns the complete lightweight index for long scrollable rails", async (
         source: { kind: "user" },
         content: [{ type: "text", text: `Prompt ${turn}` }],
       },
+    });
+    const answerSeq = seq++;
+    events.push({
+      seq: answerSeq,
+      type: "assistant/message",
+      surfaceOp: "append",
+      data: { message: { content: [{ type: "text", text: "Answer" }] } },
     });
     events.push({
       seq: seq++,
@@ -156,15 +157,19 @@ test("returns the complete lightweight index for long scrollable rails", async (
   }
 
   let handler;
-  const errors = [];
-  const sessions = {
-    get: (sessionId) =>
-      sessionId === "long-lite-contract" ? { events } : undefined,
-  };
   apply({
-    logger: { error: (message) => errors.push(message) },
+    logger: { error: assert.fail },
     inject: (services, install) => {
-      if (services.includes("sessions")) install({ sessions });
+      if (services.includes("sessions")) {
+        install({
+          sessions: {
+            get: (sessionId) =>
+              sessionId === "contract"
+                ? { snapshotEvents: () => events }
+                : undefined,
+          },
+        });
+      }
     },
     effect: (install) => install(),
     webServer: {
@@ -174,48 +179,53 @@ test("returns the complete lightweight index for long scrollable rails", async (
       },
     },
   });
-  assert.equal(typeof handler, "function");
 
   let status;
-  let responseText = "";
+  let body = "";
   await handler(
     {
       method: "GET",
-      url: "/codex-timeline/search?sessionId=long-lite-contract&lite=1",
+      url: "/codex-timeline/search?sessionId=contract&lite=1",
     },
     {
       writeHead: (value) => {
         status = value;
       },
       end: (value) => {
-        responseText = value;
+        body = value;
       },
     },
   );
 
-  const response = JSON.parse(responseText);
+  const response = JSON.parse(body);
   assert.equal(status, 200);
-  assert.equal(response.ok, true);
-  assert.equal(response.items.length, 750);
-  assert.equal(response.items[0].turn, 1);
-  assert.equal(response.items.at(-1).turn, 750);
-  assert.equal(response.total, 750);
-  assert.deepEqual(errors, []);
+  assert.equal(response.items.length, 300);
+  assert.equal(response.items[0].seq, 1);
+  assert.equal(response.items[0].branchSeq, 2);
+  assert.equal(response.items[0].branchUnavailable, false);
+  assert.equal(response.items.at(-1).turn, 300);
+  assert.equal(response.total, 300);
 });
 
-test("mounts additively and keeps failures inside the timeline", () => {
-  assert.match(client, /disabled after startup failure/u);
-  assert.match(client, /function safeSlotInject/u);
-  assert.match(client, /function AdditiveTurnNavigation/u);
-  assert.match(client, /"conversation\.session\.header\.actions"/u);
-  assert.match(client, /document\.querySelector\("\[data-chat-flow\]"\)/u);
-  assert.match(client, /querySelectorAll\("\[data-chat-anchor-key\]"\)/u);
-  assert.match(client, /react_dom\.createPortal/u);
-  assert.doesNotMatch(
-    client,
-    /function apply\(ctx\) \{\s*apply\$2\(ctx\)/u,
-    "the client entrypoint must not mount the vendored Conversation",
-  );
+test("keeps host search and preference routes isolated", () => {
+  for (const marker of [
+    '"/codex-timeline/settings"',
+    '"/codex-timeline/search"',
+    "function searchRouteHandler",
+    "function buildTurnSearchIndex",
+    "function buildTurnIndex",
+    "function liveSessionEvents",
+    "snapshotEvents",
+    "function searchIsTokenDelta",
+    "tokensPerSecond",
+    "inputTokens",
+    "outputTokens",
+    "function safeHostInject",
+    "function safeHostEffect",
+  ]) {
+    assert.ok(host.includes(marker), marker);
+  }
+  assert.doesNotMatch(host, /TURN_NAVIGATION_SETTINGS_NAMESPACE/u);
 });
 
 test("npm payload excludes local installers, source maps, and tarballs", () => {

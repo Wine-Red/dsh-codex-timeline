@@ -1,6 +1,10 @@
 dsh-codex-timeline
 
-The rc.6 compatibility adapter contains portions derived from DeepSeek Harness,
-copyright DeepSeek, licensed under the MIT License. The turn-navigation changes
-and packaging are copyright 2026 dsh-codex-timeline contributors and are also
-licensed under the MIT License. See LICENSE.
+This package interoperates with DeepSeek Harness through its public slots,
+session APIs, and documented DOM data attributes. Version 0.6.0 does not bundle
+the official Conversation or TurnNavigator implementation.
+
+DeepSeek Harness is copyright DeepSeek and licensed under the MIT License.
+The plugin implementation and packaging are copyright 2026
+dsh-codex-timeline contributors and are licensed under the MIT License. See
+LICENSE.

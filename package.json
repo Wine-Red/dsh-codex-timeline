@@ -1,7 +1,7 @@
 {
   "name": "dsh-codex-timeline",
-  "version": "0.5.5",
-  "description": "Codex-style turn timeline and local conversation search for DeepSeek Harness Web",
+  "version": "0.6.0",
+  "description": "Search, favorites, branching, and personalization for the official DeepSeek Harness turn navigator",
   "homepage": "https://github.com/Wine-Red/dsh-codex-timeline#readme",
   "repository": {
     "type": "git",
@@ -38,23 +38,21 @@
     },
     "client": {
       "inject": [
-        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-runtime",
-        "@deepseek-ai/dsh-client-ui-settings",
-        "@deepseek-ai/dsh-api-remotes",
-        "@deepseek-ai/dsh-client-ui-layout"
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-settings"
       ],
       "platform": "web"
     }
   },
   "dshCodexTimeline": {
-    "verifiedDshVersion": "0.1.1-rc.2",
+    "verifiedDshVersion": "0.1.2-alpha.3",
     "verifiedDshVersions": [
-      "0.1.1-rc.2"
+      "0.1.2-alpha.3"
     ],
     "insertsRow": "codex-timeline",
-    "compatibilityMode": "additive-public-lifecycle"
+    "compatibilityMode": "official-navigation-enhancer"
   },
   "files": [
     "lib/index.js",
@@ -95,90 +93,32 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-settings": "0.1.1-rc.2",
-    "@deepseek-ai/schemastery": "3.18.1",
-    "clsx": "2.1.1"
+    "@deepseek-ai/dsh-settings": "0.1.2-alpha.3",
+    "@deepseek-ai/schemastery": "3.18.2"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.1",
-    "@deepseek-ai/dsh-agent": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-api-remotes": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-attachment": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-brand": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-connection": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-locale": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-runtime": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-attachment": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-input-trigger": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-settings": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-client-ui-slots": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-commands": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-compaction": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-invariants": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-llm-retry": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-session-stats": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-token-meter": "^0.1.1-rc.2",
-    "@deepseek-ai/dsh-tools": "^0.1.1-rc.2",
-    "react": "18.3.1",
-    "react-dom": "^18.3.1 || ^19.0.0"
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-api-session-controller": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-client-locale": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-client-ui-renderer": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-client-ui-settings": "^0.1.2-alpha.3",
+    "@deepseek-ai/dsh-invariants": "^0.1.2-alpha.3",
+    "react": "18.3.1"
   },
   "peerDependenciesMeta": {
-    "@deepseek-ai/dsh-agent": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-api-remotes": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-attachment": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-brand": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-connection": {
+    "@deepseek-ai/dsh-api-session-controller": {
       "optional": true
     },
     "@deepseek-ai/dsh-client-locale": {
       "optional": true
     },
-    "@deepseek-ai/dsh-client-runtime": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-attachment": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-input-trigger": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-client-ui-primitives": {
+    "@deepseek-ai/dsh-client-ui-renderer": {
       "optional": true
     },
     "@deepseek-ai/dsh-client-ui-settings": {
       "optional": true
     },
-    "@deepseek-ai/dsh-client-ui-slots": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-commands": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-compaction": {
-      "optional": true
-    },
     "@deepseek-ai/dsh-invariants": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-llm-retry": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-session-stats": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-token-meter": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-tools": {
       "optional": true
     },
     "react": {

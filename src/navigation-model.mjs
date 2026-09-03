@@ -626,36 +626,138 @@ function contentTextBlocks(content) {
 }
 
 /** One per-Turn record projected from the complete log (shared by both modes). */
+function searchIsTokenDelta(chunk) {
+  if (chunk?.type === "text-delta" || chunk?.type === "reasoning-delta")
+    return chunk.text !== "";
+  if (chunk?.type === "tool-call-delta")
+    return chunk.argumentsDelta !== "" || chunk.name !== undefined;
+  return false;
+}
+
+function searchUsageTokens(usage, key) {
+  const value = usage?.[key];
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
+
+function createProjectedTurn(turn) {
+  return {
+    turn,
+    user: [],
+    assistants: [],
+    failed: false,
+    closed: false,
+    seq: undefined,
+    lastSurfaceSeq: undefined,
+    branchSeq: undefined,
+    branchUnavailable: true,
+    firstStep: undefined,
+    firstStepTtftMs: undefined,
+    decodeMs: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    hasInputTokens: false,
+    hasOutputTokens: false,
+    openStep: undefined,
+  };
+}
+
+function projectedTurn(turns, turn) {
+  let entry = turns.get(turn);
+  if (entry === undefined) {
+    entry = createProjectedTurn(turn);
+    turns.set(turn, entry);
+  }
+  return entry;
+}
+
 function projectTurns(events) {
   const current = currentSurfaceSeqs(events);
   const turns = new Map();
   let currentTurn = undefined;
   for (const event of events) {
-    if (event?.type === "turn/start") currentTurn = event.data?.turn;
+    if (event?.type === "turn/start") {
+      currentTurn = event.data?.turn;
+      if (Number.isSafeInteger(currentTurn)) {
+        projectedTurn(turns, currentTurn).startTime = event.time;
+      }
+    }
+    const eventTurn = Number.isSafeInteger(event?.data?.turn)
+      ? event.data.turn
+      : currentTurn;
+    if (Number.isSafeInteger(eventTurn)) {
+      const metricEntry = projectedTurn(turns, eventTurn);
+      if (event.type === "step/start") {
+        metricEntry.openStep = {
+          step: event.data?.step,
+          startTime: event.time,
+          firstTokenTime: undefined,
+        };
+      } else if (event.type === "assistant/chunk") {
+        const open = metricEntry.openStep;
+        if (
+          open !== undefined &&
+          open.step === event.data?.step &&
+          open.firstTokenTime === undefined &&
+          searchIsTokenDelta(event.data?.chunk)
+        ) {
+          open.firstTokenTime = event.time;
+        }
+      } else if (event.type === "assistant/message") {
+        const open = metricEntry.openStep;
+        if (open !== undefined && open.step === event.data?.step) {
+          if (open.firstTokenTime !== undefined) {
+            const ttftMs = Math.max(0, open.firstTokenTime - open.startTime);
+            if (
+              metricEntry.firstStep === undefined ||
+              Number(event.data?.step) < metricEntry.firstStep
+            ) {
+              metricEntry.firstStep = Number(event.data?.step);
+              metricEntry.firstStepTtftMs = ttftMs;
+            }
+            const outputTokens = searchUsageTokens(
+              event.data?.usage,
+              "outputTokens",
+            );
+            if (outputTokens !== undefined) {
+              metricEntry.decodeMs += Math.max(
+                0,
+                event.time - open.firstTokenTime,
+              );
+              metricEntry.outputTokens += outputTokens;
+              metricEntry.hasOutputTokens = true;
+            }
+          }
+          const inputTokens = searchUsageTokens(
+            event.data?.usage,
+            "inputTokens",
+          );
+          if (inputTokens !== undefined) {
+            metricEntry.inputTokens += inputTokens;
+            metricEntry.hasInputTokens = true;
+          }
+          metricEntry.openStep = undefined;
+        }
+      }
+    }
     // Turn boundaries are structural: they carry no surfaceOp, so they must be
     // processed OUTSIDE the surface gate (user/assistant/tool events are).
     if (event?.type === "turn/end") {
       const entry = turns.get(event.data?.turn ?? currentTurn);
       if (entry !== undefined) {
         entry.closed = true;
+        entry.endTime = event.time;
         if (event.data?.reason?.kind === "error") entry.failed = true;
+        entry.branchSeq = entry.lastSurfaceSeq;
+        entry.branchUnavailable = entry.branchSeq === undefined;
       }
       continue;
     }
     const turn = currentTurn;
     if (turn === undefined || !current.has(event.seq)) continue;
-    let entry = turns.get(turn);
-    if (entry === undefined) {
-      entry = {
-        turn,
-        user: [],
-        assistants: [],
-        failed: false,
-        closed: false,
-        seq: undefined,
-      };
-      turns.set(turn, entry);
-    }
+    const entry = projectedTurn(turns, turn);
+    entry.lastSurfaceSeq = event.seq;
     if (event.type === "user/message") {
       if (event.data?.source?.kind !== "user") continue;
       const text = contentTextBlocks(event.data?.content).trim();
@@ -688,7 +790,19 @@ function turnSearchItem(entry) {
     turn: entry.turn,
     seq: entry.seq,
     time: entry.time,
+    startTime: entry.startTime,
+    endTime: entry.endTime,
     status: turnSearchStatus(entry),
+    branchSeq: entry.branchSeq,
+    branchUnavailable: entry.branchUnavailable,
+    ...(entry.firstStepTtftMs === undefined
+      ? {}
+      : { ttftMs: entry.firstStepTtftMs }),
+    ...(entry.decodeMs > 0 && entry.hasOutputTokens
+      ? { tokensPerSecond: entry.outputTokens / (entry.decodeMs / 1000) }
+      : {}),
+    ...(entry.hasInputTokens ? { inputTokens: entry.inputTokens } : {}),
+    ...(entry.hasOutputTokens ? { outputTokens: entry.outputTokens } : {}),
     summary: twoLineSummary(entry.user.join("\n")),
     answer:
       entry.assistants.length === 0

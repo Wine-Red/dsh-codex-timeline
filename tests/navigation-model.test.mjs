@@ -280,6 +280,54 @@ test("builds the lite index for every Turn without context and marks open turns"
   );
 });
 
+test("projects per-Turn time, latency, throughput, and token consumption", () => {
+  const events = [
+    { seq: 0, type: "turn/start", time: 1000, data: { turn: 1 } },
+    {
+      seq: 1,
+      type: "user/message",
+      time: 1020,
+      surfaceOp: "append",
+      data: {
+        source: { kind: "user" },
+        content: [{ type: "text", text: "measure this turn" }],
+      },
+    },
+    { seq: 2, type: "step/start", time: 1100, data: { turn: 1, step: 0 } },
+    {
+      seq: 3,
+      type: "assistant/chunk",
+      time: 1250,
+      data: { turn: 1, step: 0, chunk: { type: "text-delta", text: "A" } },
+    },
+    {
+      seq: 4,
+      type: "assistant/message",
+      time: 2250,
+      surfaceOp: "append",
+      data: {
+        turn: 1,
+        step: 0,
+        usage: { inputTokens: 120, outputTokens: 50 },
+        message: { content: [{ type: "text", text: "Answer" }] },
+      },
+    },
+    {
+      seq: 5,
+      type: "turn/end",
+      time: 2500,
+      data: { turn: 1, reason: { kind: "completed" } },
+    },
+  ];
+  const { items } = buildTurnIndex(events);
+  assert.equal(items[0].startTime, 1000);
+  assert.equal(items[0].endTime, 2500);
+  assert.equal(items[0].ttftMs, 150);
+  assert.equal(items[0].tokensPerSecond, 50);
+  assert.equal(items[0].inputTokens, 120);
+  assert.equal(items[0].outputTokens, 50);
+});
+
 test("structural turn boundaries need no surface marker", () => {
   const events = [
     { seq: 0, type: "turn/start", time: 1, data: { turn: 1 } },

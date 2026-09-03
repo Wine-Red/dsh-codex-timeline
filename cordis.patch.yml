@@ -1,5 +1,5 @@
-# Keep the official Conversation row intact. The timeline mounts additively
-# through its public session-header lifecycle seat and stable chat DOM anchors.
+# Keep the official Conversation and TurnNavigator intact. This package adds
+# search actions and applies only user-selected geometry to the official rail.
 - insert:
     - id: codex-timeline
       name: dsh-codex-timeline

@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
   "dsh": {
-    "version": "0.1.1-rc.2",
-    "verifiedVersions": ["0.1.1-rc.2"]
+    "version": "0.1.2-alpha.3",
+    "verifiedVersions": ["0.1.2-alpha.3"]
   },
   "officialConversation": {
     "package": "@deepseek-ai/dsh-client-ui-conversation",
     "ownership": "preserved",
-    "verifiedVersions": ["0.1.1-rc.2"]
+    "verifiedVersions": ["0.1.2-alpha.3"]
   },
   "adapter": {
-    "mode": "additive-public-lifecycle",
+    "mode": "official-navigation-enhancer",
     "insertedRow": "codex-timeline",
     "clientModuleId": "dsh-codex-timeline",
     "publicSlot": "conversation.session.header.actions",
-    "domAnchors": ["data-chat-flow", "data-chat-anchor-key"],
-    "messageImagesSlot": "conversation.message.images",
-    "styleCorpusSha256": "645a109559d539c3622cb3c7b291f16e17a4b0cc51629377903f70e0e7c11519",
-    "artifactSha256": "0571b6c4876ceb1a7c2f5eec6ca06880d29591daeb35bfc751cd41d16fe81edb"
+    "officialNavigationOwner": "@deepseek-ai/dsh-client-ui-chat",
+    "officialNavigation": "TurnNavigator",
+    "domAnchors": ["data-chat-flow", "data-chat-turn"],
+    "sessionApis": ["loadThrough", "fork"]
   }
 }
