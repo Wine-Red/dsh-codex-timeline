@@ -32,7 +32,7 @@ try {
 
 if (manifest.name !== "dsh-codex-timeline") fail("unexpected package name");
 if (manifest.private === true) fail("package is private");
-if (manifest.version !== "0.6.0") fail("unexpected release version");
+if (manifest.version !== "0.6.2") fail("unexpected release version");
 if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") {
   fail("missing dsh.bundle.patch");
 }
@@ -45,13 +45,13 @@ if (
   fail("bundle must enhance without replacing Conversation");
 }
 if (
-  compatibility.dsh?.version !== "0.1.2-alpha.3" ||
+  compatibility.dsh?.version !== "0.1.7-rc.1" ||
   compatibility.adapter?.mode !== "official-navigation-enhancer" ||
   compatibility.adapter?.officialNavigation !== "TurnNavigator" ||
   manifest.dshCodexTimeline?.compatibilityMode !==
     "official-navigation-enhancer"
 ) {
-  fail("alpha.3 official-navigation compatibility metadata is stale");
+  fail("rc.1 official-navigation compatibility metadata is stale");
 }
 if (
   !client.startsWith(
@@ -62,9 +62,9 @@ if (
 }
 
 for (const required of [
-  '"settings.plugin.item"',
+  '"settings.plugins.tab"',
   '"conversation.session.header.actions"',
-  'document.querySelectorAll("[data-chat-flow]")',
+  'document.querySelector("[data-chat-flow]")',
   '`[data-chat-turn="${String(turn)}"]`',
   "function officialNavigator",
   "function enhanceOfficialNavigator",
@@ -130,9 +130,9 @@ if (
 }
 
 for (const required of [
-  'TIMELINE_SETTINGS_NAMESPACE = "dsh-codex-timeline"',
+  'TIMELINE_SETTINGS_NAMESPACE = "codex-timeline"',
   "enabled: z.boolean().default(true)",
-  'side: z.union([z.const("left"), z.const("right")]).default("left")',
+  '.union([z.const("left"), z.const("right")])',
   "leftOffset: z.number().step(1).min(0).max(120).default(0)",
   "centerOffset: z.number().step(1).min(-200).max(200).default(0)",
   "markerSpacing: z.number().step(1).min(6).max(40).default(10)",

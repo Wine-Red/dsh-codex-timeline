@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "dsh": {
-    "version": "0.1.2-alpha.3",
-    "verifiedVersions": ["0.1.2-alpha.3"]
+    "version": "0.1.7-rc.1",
+    "verifiedVersions": ["0.1.7-rc.1"]
   },
   "officialConversation": {
     "package": "@deepseek-ai/dsh-client-ui-conversation",
     "ownership": "preserved",
-    "verifiedVersions": ["0.1.2-alpha.3"]
+    "verifiedVersions": ["0.1.7-rc.1"]
   },
   "adapter": {
     "mode": "official-navigation-enhancer",

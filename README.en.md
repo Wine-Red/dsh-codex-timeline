@@ -1,17 +1,19 @@
 # DSH Codex Timeline
 
+> Source compatibility update: 0.6.2 / DSH 0.1.7-rc.1. Settings live under Settings → Built-in plugins → Timeline and persist in the profile `cordis.patch.yml`. Cold history uses read-only storage handles; forks open through the official workspace service.
+
 English | [中文](README.md)
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-DSH Codex Timeline enhances the official DeepSeek Harness Web turn navigator. DSH introduced native turn navigation in the `0.1.2` series. Starting with plugin version `0.6.0`, the plugin no longer renders a second timeline or bundles a copy of Conversation or `TurnNavigator`; DSH itself owns the Codex-style dashes, base states, and native interaction.
+DSH Codex Timeline enhances turn navigation in DeepSeek Harness Web. Version `0.6.2` adds a presentation adapter for the virtualized rail in DSH `0.1.7-rc.1`, restoring the hover gradient, left/right placement, marker spacing, and favorite filtering. Session loading and branching use official APIs. Disabling enhancements restores the official rail.
 
 The plugin adds the capabilities the official navigator does not yet provide: complete-session search, favorites, branching from a selected Turn, a time-and-token-rich Turn preview, and the existing personalization controls.
 
 > [!IMPORTANT]
-> The current `0.6.x` release supports DSH `0.1.2-alpha.3` only. Use plugin version `0.5.5` with earlier DSH releases.
+> Plugin `0.6.2` supports DSH `0.1.7-rc.1`. Keep `0.6.0` for DSH `0.1.2-alpha.3`.
 
 ## Features
 
@@ -48,7 +50,8 @@ The plugin adds the capabilities the official navigator does not yet provide: co
 
 DSH introduced a native turn navigator in the `0.1.2` series. Since `0.6.0`, this plugin enhances that native navigator with search, favorites, branching, previews, staircase motion, and layout customization instead of creating a separate timeline.
 
-- DSH `0.1.2-alpha.3`: use the current plugin `0.6.x`.
+- DSH `0.1.7-rc.1`: use plugin `0.6.2`.
+- DSH `0.1.2-alpha.3`: use plugin `0.6.0`.
 - Earlier DSH releases: use plugin `0.5.5`, which provides the complete standalone timeline.
 
 Install the legacy plugin by specifying its npm version:
@@ -57,11 +60,13 @@ Install the legacy plugin by specifying its npm version:
 dsh plugin --profile web add "dsh-codex-timeline@0.5.5"
 ```
 
-You can also download the [`v0.5.5` source archive](https://github.com/Wine-Red/dsh-codex-timeline/archive/refs/tags/v0.5.5.zip). The `install.ps1` script on the current branch is only for DSH `0.1.2-alpha.3`; do not use it to install the legacy plugin.
+You can also download the [`v0.5.5` source archive](https://github.com/Wine-Red/dsh-codex-timeline/archive/refs/tags/v0.5.5.zip). The `install.ps1` script on the current branch is only for DSH `0.1.7-rc.1`; do not use it to install the legacy plugin.
 
 ## Installation
 
-The following steps apply only to DSH `0.1.2-alpha.3`. For earlier DSH releases, install plugin version `0.5.5` as described above.
+> This compatibility update is available in GitHub source. npm and GitHub Release versions may differ. Build from source using the instructions below, or verify that a downloaded package matches the version documented here.
+
+The following steps apply only to DSH `0.1.7-rc.1`. For earlier DSH releases, install plugin version `0.5.5` as described above.
 
 Confirm the installed runtime first:
 

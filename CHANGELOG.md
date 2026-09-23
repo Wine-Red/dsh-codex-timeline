@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2
+
+- Adapt the DSH 0.1.7-rc.1 virtualized rail: restore marker appearance, hover previews, layout preferences and favorite filtering.
+- Preserve official navigation when enhancements are disabled. Add browser coverage for geometry, previews, cold-turn jumps and settings.
+
 ## 0.6.0 - 2026-09-01
 
 - Reposition the project as an enhancer for DSH `0.1.2-alpha.3`'s official `TurnNavigator`. Remove the vendored legacy Conversation bundle, custom navigation seat, Portal, copied style corpus, and duplicate marker rail; the official Codex-style dashes remain visually authoritative.

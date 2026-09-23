@@ -1,3 +1,4 @@
+import { assistantStreamFirstTokenTime } from "@deepseek-ai/dsh-llm";
 /** Pure navigation projection shared by contract tests and upgrade audits. */
 
 export function twoLineSummary(text) {
@@ -707,6 +708,14 @@ function projectTurns(events) {
       } else if (event.type === "assistant/message") {
         const open = metricEntry.openStep;
         if (open !== undefined && open.step === event.data?.step) {
+          if (
+            open.firstTokenTime === undefined &&
+            Array.isArray(event.data?.stream)
+          ) {
+            open.firstTokenTime = assistantStreamFirstTokenTime(
+              event.data.stream,
+            );
+          }
           if (open.firstTokenTime !== undefined) {
             const ttftMs = Math.max(0, open.firstTokenTime - open.startTime);
             if (

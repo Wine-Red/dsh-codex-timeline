@@ -1,6 +1,6 @@
 {
   "name": "dsh-codex-timeline",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "description": "Search, favorites, branching, and personalization for the official DeepSeek Harness turn navigator",
   "homepage": "https://github.com/Wine-Red/dsh-codex-timeline#readme",
   "repository": {
@@ -41,15 +41,16 @@
         "@deepseek-ai/dsh-api-session-controller",
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-renderer",
-        "@deepseek-ai/dsh-client-ui-settings"
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-workspace"
       ],
       "platform": "web"
     }
   },
   "dshCodexTimeline": {
-    "verifiedDshVersion": "0.1.2-alpha.3",
+    "verifiedDshVersion": "0.1.7-rc.1",
     "verifiedDshVersions": [
-      "0.1.2-alpha.3"
+      "0.1.7-rc.1"
     ],
     "insertsRow": "codex-timeline",
     "compatibilityMode": "official-navigation-enhancer"
@@ -93,16 +94,17 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-settings": "0.1.2-alpha.3",
-    "@deepseek-ai/schemastery": "3.18.2"
+    "@deepseek-ai/dsh-settings": "0.1.7-rc.1",
+    "@deepseek-ai/schemastery": "3.18.4",
+    "@deepseek-ai/dsh-llm": "0.1.7-rc.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-api-session-controller": "^0.1.2-alpha.3",
-    "@deepseek-ai/dsh-client-locale": "^0.1.2-alpha.3",
-    "@deepseek-ai/dsh-client-ui-renderer": "^0.1.2-alpha.3",
-    "@deepseek-ai/dsh-client-ui-settings": "^0.1.2-alpha.3",
-    "@deepseek-ai/dsh-invariants": "^0.1.2-alpha.3",
+    "@deepseek-ai/cordis": "~4.0.4",
+    "@deepseek-ai/dsh-api-session-controller": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-locale": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.7-rc.1",
+    "@deepseek-ai/dsh-invariants": "0.1.7-rc.1",
     "react": "18.3.1"
   },
   "peerDependenciesMeta": {

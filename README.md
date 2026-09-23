@@ -1,17 +1,19 @@
 # DSH Codex Timeline
 
+> 当前源码适配版：0.6.2 / DSH 0.1.7-rc.1。设置入口为“设置 → 内置插件 → Timeline”；设置与收藏写入 profile 的 `cordis.patch.yml`。历史搜索使用只读存储句柄，分支通过官方工作区服务打开。
+
 [English](README.en.md) | 中文
 
 [![CI](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/Wine-Red/dsh-codex-timeline/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/dsh-codex-timeline.svg)](https://www.npmjs.com/package/dsh-codex-timeline)
 [![license](https://img.shields.io/github/license/Wine-Red/dsh-codex-timeline.svg)](LICENSE)
 
-DSH Codex Timeline 是 DeepSeek Harness Web 官方轮次导航栏的增强插件。DSH 从 `0.1.2` 系列开始提供原生轮次导航栏；自本插件 `0.6.0` 起，插件不再渲染第二套时间线，也不复制官方 Conversation 或 `TurnNavigator`，Codex 风格短横、基础状态和原生交互均由 DSH 自身负责。
+DSH Codex Timeline 是 DeepSeek Harness Web 的轮次导航增强插件。`0.6.2` 针对 DSH `0.1.7-rc.1` 的虚拟化导航增加显示适配层，恢复短横渐变、左右布局、自定义间距和收藏筛选。会话内容、历史加载及分支仍调用官方接口；关闭增强后恢复官方导航。
 
 插件只补充官方导航目前没有的能力：完整会话搜索、收藏、从指定轮次分支、包含时间与 Token 消耗的轮次预览，以及原有的个性化布局选项。
 
 > [!IMPORTANT]
-> 当前 `0.6.x` 只支持 DSH `0.1.2-alpha.3`。此前版本的 DSH 请使用插件 `0.5.5`。
+> `0.6.2` 适配 DSH `0.1.7-rc.1`；DSH `0.1.2-alpha.3` 请继续使用插件 `0.6.0`。
 
 ## 功能
 
@@ -46,9 +48,10 @@ DSH Codex Timeline 是 DeepSeek Harness Web 官方轮次导航栏的增强插件
 
 ## 兼容性
 
-DSH 从 `0.1.2` 系列开始内置原生轮次导航栏。本插件自 `0.6.0` 起改为增强该原生导航栏，只补充搜索、收藏、分支、预览、阶梯波浪和个性化布局，不再创建独立时间线。
+DSH 从 `0.1.2` 系列开始内置原生轮次导航栏。`0.6.2` 为新版虚拟化导航提供显示适配层，保留插件的搜索、收藏、分支、预览、阶梯波浪和个性化布局；会话数据和历史加载仍由 DSH 管理。
 
-- DSH `0.1.2-alpha.3`：使用当前插件 `0.6.x`。
+- DSH `0.1.7-rc.1`：使用插件 `0.6.2`。
+- DSH `0.1.2-alpha.3`：使用插件 `0.6.0`。
 - 此前版本的 DSH：使用旧版插件 `0.5.5`，由该版本提供完整的独立时间线。
 
 旧版插件可以通过 npm 指定版本安装：
@@ -57,11 +60,13 @@ DSH 从 `0.1.2` 系列开始内置原生轮次导航栏。本插件自 `0.6.0` �
 dsh plugin --profile web add "dsh-codex-timeline@0.5.5"
 ```
 
-也可以下载 [`v0.5.5` 源码包](https://github.com/Wine-Red/dsh-codex-timeline/archive/refs/tags/v0.5.5.zip)。当前主分支的 `install.ps1` 仅用于 DSH `0.1.2-alpha.3`，不要用它安装旧版插件。
+也可以下载 [`v0.5.5` 源码包](https://github.com/Wine-Red/dsh-codex-timeline/archive/refs/tags/v0.5.5.zip)。当前主分支的 `install.ps1` 仅用于 DSH `0.1.7-rc.1`，不要用它安装旧版插件。
 
 ## 安装
 
-以下步骤只适用于 DSH `0.1.2-alpha.3`。旧版 DSH 请按上方兼容表安装指定的旧版插件。
+> 当前适配代码已更新到 GitHub；npm / GitHub Release 的版本可能不同。使用本次适配请按下方源码安装步骤构建，或确认下载包版本与本文一致。
+
+以下步骤只适用于 DSH `0.1.7-rc.1`。旧版 DSH 请按上方兼容表安装指定的旧版插件。
 
 先确认本机版本：
 

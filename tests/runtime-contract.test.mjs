@@ -74,7 +74,7 @@ test("is an enhancer instead of a second Conversation or navigation rail", () =>
   assert.match(client, /function officialNavigator\(\)/u);
   assert.match(
     client,
-    /function enhanceOfficialNavigator\(preferences, favoritesOnly, items\)/u,
+    /function enhanceOfficialNavigator\(preferences, favoritesOnly, items, navigate, t\)/u,
   );
   assert.match(client, /data-chat-flow/u);
   assert.match(client, /data-dsh-navigation-enhanced/u);
@@ -86,7 +86,7 @@ test("uses alpha3 public session actions for paging and branching", () => {
     client,
     /ctx\.sessions\.fork\(\{ sessionId, atSeq: seq, increaseTitle: true \}\)/u,
   );
-  assert.match(client, /ctx\.sessions\.open\(childId\)/u);
+  assert.match(client, /ctx\.uiWorkspace\.openSession\(childId\)/u);
   assert.doesNotMatch(client, /loadOlder\(/u);
 });
 
@@ -291,7 +291,7 @@ test("registers only the settings card and header enhancement slots", async () =
 
   assert.deepEqual(
     registrations.map(({ spec }) => spec.name),
-    ["settings.plugin.item", "conversation.session.header.actions"],
+    ["settings.plugins.tab", "conversation.session.header.actions"],
   );
   assert.deepEqual(errors, []);
 });
@@ -325,7 +325,7 @@ test("isolates an unavailable optional slot without blocking the other", async (
   assert.equal(registrations, 2);
   assert.ok(
     errors.some((message) =>
-      message.includes("settings.plugin.item contribution disabled"),
+      message.includes("settings.plugins.tab contribution disabled"),
     ),
   );
 });

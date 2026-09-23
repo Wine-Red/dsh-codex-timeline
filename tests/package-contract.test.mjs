@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { apply } from "../lib/index.js";
+import { apply, Config } from "../lib/index.js";
 
 const manifest = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -39,8 +39,8 @@ test("ships as an additive public DSH bundle", () => {
 });
 
 test("declares the verified alpha3 official-navigation contract", () => {
-  assert.equal(compatibility.dsh.version, "0.1.2-alpha.3");
-  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.2-alpha.3"]);
+  assert.equal(compatibility.dsh.version, "0.1.7-rc.1");
+  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.7-rc.1"]);
   assert.equal(compatibility.officialConversation.ownership, "preserved");
   assert.equal(compatibility.adapter.mode, "official-navigation-enhancer");
   assert.equal(
@@ -49,7 +49,7 @@ test("declares the verified alpha3 official-navigation contract", () => {
   );
   for (const [name, version] of Object.entries(manifest.peerDependencies)) {
     if (name.startsWith("@deepseek-ai/dsh-")) {
-      assert.equal(version, "^0.1.2-alpha.3", name);
+      assert.equal(version, "0.1.7-rc.1", name);
     }
   }
 });
@@ -68,13 +68,13 @@ test("does not resolve removed or duplicated browser runtimes", () => {
 test("installer accepts only the verified DSH version", () => {
   assert.match(
     installer,
-    /\$supportedVersions\s*=\s*@\(['"]0\.1\.2-alpha\.3['"]\)/u,
+    /\$supportedVersions\s*=\s*@\(['"]0\.1\.7-rc\.1['"]\)/u,
   );
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });
 
 test("preserves and validates the complete preference namespace", () => {
-  let schema;
+  const schema = Config;
   const errors = [];
   const mutations = [];
   apply({
@@ -82,13 +82,12 @@ test("preserves and validates the complete preference namespace", () => {
     inject: (services, install) => {
       if (services.length !== 1 || services[0] !== "settings") return;
       install({
+        effect: (fn) => fn(),
         settings: {
-          register: (_namespace, value) => {
-            schema = value;
-          },
+          configure: () => () => undefined,
           describe: () => [
             {
-              ns: "dsh-codex-timeline",
+              ns: "codex-timeline",
               value: { enabled: true, landingFlash: true },
               user: { landingFlash: true },
               revision: 1,
@@ -105,7 +104,9 @@ test("preserves and validates the complete preference namespace", () => {
     webServer: { register: () => () => undefined },
   });
 
-  const defaults = schema({});
+  const defaults = Object.fromEntries(
+    Object.entries(schema({})).map(([key, value]) => [key, value.get()]),
+  );
   assert.deepEqual(defaults.favorites, []);
   assert.equal(defaults.enabled, true);
   assert.equal("landingFlash" in defaults, false);
@@ -119,7 +120,7 @@ test("preserves and validates the complete preference namespace", () => {
   assert.throws(() => schema({ recentTurns: 4 }), TypeError);
   assert.deepEqual(mutations, [
     {
-      namespace: "dsh-codex-timeline",
+      namespace: "codex-timeline",
       operations: [{ op: "unset", path: ["landingFlash"] }],
     },
   ]);
