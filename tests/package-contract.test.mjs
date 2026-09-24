@@ -40,7 +40,10 @@ test("ships as an additive public DSH bundle", () => {
 
 test("declares the verified alpha3 official-navigation contract", () => {
   assert.equal(compatibility.dsh.version, "0.1.7-rc.1");
-  assert.deepEqual(compatibility.dsh.verifiedVersions, ["0.1.7-rc.1"]);
+  assert.deepEqual(compatibility.dsh.verifiedVersions, [
+    "0.1.7-rc.1",
+    "0.1.7-rc.2",
+  ]);
   assert.equal(compatibility.officialConversation.ownership, "preserved");
   assert.equal(compatibility.adapter.mode, "official-navigation-enhancer");
   assert.equal(
@@ -49,7 +52,7 @@ test("declares the verified alpha3 official-navigation contract", () => {
   );
   for (const [name, version] of Object.entries(manifest.peerDependencies)) {
     if (name.startsWith("@deepseek-ai/dsh-")) {
-      assert.equal(version, "0.1.7-rc.1", name);
+      assert.equal(version, "0.1.7-rc.1 || 0.1.7-rc.2", name);
     }
   }
 });
@@ -68,7 +71,7 @@ test("does not resolve removed or duplicated browser runtimes", () => {
 test("installer accepts only the verified DSH version", () => {
   assert.match(
     installer,
-    /\$supportedVersions\s*=\s*@\(['"]0\.1\.7-rc\.1['"]\)/u,
+    /\$supportedVersions\s*=\s*@\(['"]0\.1\.7-rc\.1['"], ['"]0\.1\.7-rc\.2['"]\)/u,
   );
   assert.match(installer, /\$actualVersion -notin \$supportedVersions/u);
 });

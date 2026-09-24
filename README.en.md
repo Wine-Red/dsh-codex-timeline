@@ -105,3 +105,7 @@ pnpm pack --pack-destination artifacts
 ## License
 
 [MIT](LICENSE). This release no longer redistributes the official Conversation or `TurnNavigator`; see [NOTICE](NOTICE) for interoperability and attribution details.
+
+### Desktop compatibility fix (2026-09-25)
+
+Supports DSH `0.1.7-rc.1` and `0.1.7-rc.2`. Host packages are optional peers, not production dependencies, preventing stale core packages from being installed into the profile. Restart DSH after upgrading. Future host versions require compatibility validation.

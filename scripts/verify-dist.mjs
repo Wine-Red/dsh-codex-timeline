@@ -32,7 +32,7 @@ try {
 
 if (manifest.name !== "dsh-codex-timeline") fail("unexpected package name");
 if (manifest.private === true) fail("package is private");
-if (manifest.version !== "0.6.2") fail("unexpected release version");
+if (manifest.version !== "0.6.3") fail("unexpected release version");
 if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") {
   fail("missing dsh.bundle.patch");
 }
@@ -163,3 +163,8 @@ const digest = createHash("sha256").update(client).digest("hex");
 console.log(
   `verified dsh-codex-timeline ${manifest.version} for DSH ${compatibility.dsh.version} (${digest.slice(0, 12)})`,
 );
+
+for (const name of Object.keys(manifest.dependencies ?? {})) {
+  if (name.startsWith("@deepseek-ai/"))
+    fail("host packages must not be bundled as runtime dependencies");
+}

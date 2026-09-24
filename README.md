@@ -105,3 +105,7 @@ pnpm pack --pack-destination artifacts
 ## License
 
 [MIT](LICENSE)。当前版本不再分发官方 Conversation 或 `TurnNavigator` 实现；互操作与归属说明见 [NOTICE](NOTICE)。
+
+### 桌面端兼容修复（2026-09-25）
+
+支持 DSH `0.1.7-rc.1` 和 `0.1.7-rc.2`。宿主核心包通过可选 peerDependencies 声明，不再作为生产依赖安装，避免插件带入旧版核心。升级插件后请重启 DSH；未来版本仍需验证后扩展兼容范围。
